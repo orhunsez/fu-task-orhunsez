@@ -1,28 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { EmptyState, ErrorState, LoadingRows } from "@/components/query-states";
 import { TaskForm } from "@/components/task-form";
 import { TaskHistory } from "@/components/task-history";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApiError } from "@/lib/api";
-import { useHistory, useTask, useUpdateTask, useUsers } from "@/lib/queries";
+import { useDeleteTask, useHistory, useTask, useUpdateTask, useUsers } from "@/lib/queries";
 import type { Task, TaskBody } from "@/lib/types";
 
 export default function TaskDetailPage() {
+  const router = useRouter();
   const params = useParams<{ id: string }>();
   const taskId = Number(params.id);
   const task = useTask(taskId);
   const history = useHistory(taskId);
   const users = useUsers();
   const updateTask = useUpdateTask(taskId);
+  const deleteTask = useDeleteTask(taskId);
 
   // Hata olursa mutateAsync hata fırlatır; form bunu yakalayıp ilgili alanın altına yazar.
   async function save(body: TaskBody) {
     await updateTask.mutateAsync(body);
+  }
+
+  // Önce onay sorulur; silinince listeye dönülür. Hata olursa düğmenin altında görünür.
+  function remove() {
+    if (!window.confirm("Görev silinsin mi?")) return;
+    deleteTask.mutate(undefined, { onSuccess: () => router.push("/") });
   }
 
   function renderHistory(currentTask: Task) {
@@ -53,9 +61,19 @@ export default function TaskDetailPage() {
 
     return (
       <>
-        <h1 className="text-xl font-semibold">
-          <span className="text-muted-foreground">#{task.data.id}</span> {task.data.title}
-        </h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-xl font-semibold">
+            <span className="text-muted-foreground">#{task.data.id}</span> {task.data.title}
+          </h1>
+          <div className="text-right">
+            <Button variant="destructive" disabled={deleteTask.isPending} onClick={remove}>
+              {deleteTask.isPending ? "Siliniyor…" : "Sil"}
+            </Button>
+            {deleteTask.isError && (
+              <p className="mt-1 text-sm text-destructive">{deleteTask.error.message}</p>
+            )}
+          </div>
+        </div>
         <div className="grid items-start gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>

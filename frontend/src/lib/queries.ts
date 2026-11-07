@@ -82,3 +82,12 @@ export function useUpdateTask(id: number) {
       ]),
   });
 }
+
+/** Görevi sil (backend'de soft delete). Liste yeniden çekilir. */
+export function useDeleteTask(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<void>(`/tasks/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+  });
+}
