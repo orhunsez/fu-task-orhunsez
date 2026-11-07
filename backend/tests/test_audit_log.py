@@ -88,6 +88,15 @@ def test_done_task_can_be_reopened(client):
     assert history(client, task_id)[0]["old_value"] == "Bitti"
 
 
+def test_response_lists_allowed_next_statuses(client):
+    task_id = create_task(client)
+    assert client.get(f"/tasks/{task_id}").json()["next_statuses"] == ["Devam ediyor"]
+
+    response = set_status(client, task_id, "Devam ediyor")
+
+    assert response.json()["next_statuses"] == ["Beklemede", "Bitti", "Yapılacak"]
+
+
 def test_history_of_missing_task_returns_404(client):
     assert client.get("/tasks/999/history").status_code == 404
 

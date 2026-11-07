@@ -13,7 +13,7 @@ from pydantic import (
 )
 
 from app.models import HistoryField, TaskPriority, TaskStatus
-from app.rules import is_overdue
+from app.rules import ALLOWED_TRANSITIONS, is_overdue
 
 
 class UserOut(BaseModel):
@@ -89,6 +89,13 @@ class TaskOut(BaseModel):
     @property
     def is_overdue(self) -> bool:
         return is_overdue(self.status, self.due_date)
+
+    # Arayüzdeki durum menüsü sadece bunları gösterir. Geçiş kuralı böylece tek yerde
+    # (rules.ALLOWED_TRANSITIONS) kalır; frontend kuralı kopyalamaz.
+    @computed_field
+    @property
+    def next_statuses(self) -> list[TaskStatus]:
+        return list(ALLOWED_TRANSITIONS[self.status])
 
 
 class TaskListOut(BaseModel):
