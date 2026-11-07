@@ -12,65 +12,104 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea";
 import { useActor } from "@/lib/actor";
 import { ApiError } from "@/lib/api";
-import { todayInIstanbul } from "@/lib/format";
-import { PRIORITIES, type TaskBody, type User } from "@/lib/types";
+import { todayInIstanbul, userLabel } from "@/lib/format";
+import { PRIORITIES, STATUSES, type Task, type TaskBody, type User } from "@/lib/types";
 
 // Formun alanları ve kuralları (zod). Seçim ve tarih kutuları metin döndürür; "" boş demek.
 // Aynı kurallar backend'de de var; buradaki kontrol kullanıcıya anında mesaj göstermek için.
-const taskSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(1, "Bu alan boş olamaz.")
-    .max(200, "En fazla 200 karakter olabilir."),
-  description: z.string(),
-  priority: z.enum(PRIORITIES),
-  assignee_id: z.string(),
-  due_date: z
-    .string()
-    .refine((value) => !value || value >= todayInIstanbul(), "Son tarih geçmişte olamaz."),
-});
+// originalDueDate: düzenlenen görevin kayıtlı son tarihi. Backend'deki gibi kural sadece
+// değişen değere uygulanır; son tarihi geçmiş eski bir görevin diğer alanları kaydedilebilir.
+function buildSchema(originalDueDate: string) {
+  return z.object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "Bu alan boş olamaz.")
+      .max(200, "En fazla 200 karakter olabilir."),
+    description: z.string(),
+    status: z.enum(STATUSES),
+    priority: z.enum(PRIORITIES),
+    assignee_id: z.string(),
+    due_date: z
+      .string()
+      .refine(
+        (value) => !value || value === originalDueDate || value >= todayInIstanbul(),
+        "Son tarih geçmişte olamaz.",
+      ),
+  });
+}
 
-type TaskFormValues = z.infer<typeof taskSchema>;
+type TaskFormValues = z.infer<ReturnType<typeof buildSchema>>;
 
-const FORM_FIELDS = ["title", "description", "priority", "assignee_id", "due_date"] as const;
+const FORM_FIELDS = ["title", "description", "status", "priority", "assignee_id", "due_date"] as const;
 type FormField = (typeof FORM_FIELDS)[number];
 
 function isFormField(name: string): name is FormField {
   return (FORM_FIELDS as readonly string[]).includes(name);
 }
 
+/** Görev -> form değerleri. Kutular metinle çalıştığı için boş alanlar "" olur. */
+function toFormValues(task?: Task): TaskFormValues {
+  return {
+    title: task?.title ?? "",
+    description: task?.description ?? "",
+    status: task?.status ?? "Yapılacak",
+    priority: task?.priority ?? "Orta",
+    assignee_id: task?.assignee_id ? String(task.assignee_id) : "",
+    due_date: task?.due_date ?? "",
+  };
+}
+
+/** Form değerleri -> API değerleri. Boş metin null olur, kişi id'si sayıya çevrilir. */
+function toApiValues(values: TaskFormValues) {
+  return {
+    title: values.title,
+    description: values.description.trim() || null,
+    status: values.status,
+    priority: values.priority,
+    assignee_id: values.assignee_id ? Number(values.assignee_id) : null,
+    due_date: values.due_date || null,
+  };
+}
+
 type TaskFormProps = {
+  task?: Task; // verilirse düzenleme formu, verilmezse yeni görev formu
   users: User[];
   onSave: (body: TaskBody) => Promise<unknown>;
 };
 
-export function TaskForm({ users, onSave }: TaskFormProps) {
+export function TaskForm({ task, users, onSave }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskSchema),
-    defaultValues: { title: "", description: "", priority: "Orta", assignee_id: "", due_date: "" },
+    resolver: zodResolver(buildSchema(task?.due_date ?? "")),
+    defaultValues: toFormValues(task),
   });
-  const { errors, isSubmitting } = form.formState;
+  // formState'ten okunan alanlar render sırasında okunmalı; react-hook-form sadece
+  // okunanları takip eder (dirtyFields okunmazsa hesaplanmaz).
+  const { errors, isSubmitting, isDirty, dirtyFields } = form.formState;
 
   const { actorId } = useActor();
   // Kaydetmek için seçili kişi aktif bir kullanıcı olmalı.
   const actor = users.find((user) => user.id === actorId && user.is_active);
-  const activeUsers = users.filter((user) => user.is_active);
+
+  // Yeni atama sadece aktif kişilere yapılabilir. Görev zaten pasif birine atanmışsa o kişi de
+  // listede kalır; yoksa kutu boş görünür ve görev atanmamış sanılır.
+  const assigneeOptions = users.filter((user) => user.is_active || user.id === task?.assignee_id);
 
   async function submit(values: TaskFormValues) {
     if (!actor) return;
+    // Yeni görevde durum hariç her alan gider (backend her zaman "Yapılacak" ile başlatır).
+    // Düzenlemede sadece kullanıcının değiştirdiği alanlar gider (PATCH).
+    const fields = task
+      ? FORM_FIELDS.filter((field) => dirtyFields[field])
+      : FORM_FIELDS.filter((field) => field !== "status");
+    const apiValues = toApiValues(values);
+    const changes = Object.fromEntries(fields.map((field) => [field, apiValues[field]]));
+
     try {
-      await onSave({
-        title: values.title,
-        description: values.description.trim() || null,
-        priority: values.priority,
-        assignee_id: values.assignee_id ? Number(values.assignee_id) : null,
-        due_date: values.due_date || null,
-        actor_id: actor.id,
-      });
+      await onSave({ ...(changes as Partial<typeof apiValues>), actor_id: actor.id });
     } catch (error) {
       // Backend hatası {"detail", "field"}: alanla ilgiliyse o alanın altına
-      // (örn. pasif kişi -> "Atanan kişi"), değilse formun üstüne yazılır.
+      // (örn. 409 -> "Durum"), değilse formun üstüne yazılır.
       if (error instanceof ApiError && error.field && isFormField(error.field)) {
         form.setError(error.field, { message: error.message });
       } else {
@@ -97,6 +136,20 @@ export function TaskForm({ users, onSave }: TaskFormProps) {
         <Textarea id="description" rows={3} {...form.register("description")} />
       </Field>
 
+      {/* Yeni görev her zaman "Yapılacak" ile başlar; durum sadece düzenlemede seçilir. */}
+      {task && (
+        <Field id="status" label="Durum" error={errors.status?.message}>
+          {/* Sadece mevcut durum ve izin verilen geçişler (backend'den gelen next_statuses). */}
+          <NativeSelect id="status" aria-invalid={!!errors.status} {...form.register("status")}>
+            {[task.status, ...task.next_statuses].map((status) => (
+              <NativeSelectOption key={status} value={status}>
+                {status}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </Field>
+      )}
+
       <Field id="priority" label="Öncelik *" error={errors.priority?.message}>
         <NativeSelect id="priority" aria-invalid={!!errors.priority} {...form.register("priority")}>
           {PRIORITIES.map((priority) => (
@@ -114,9 +167,9 @@ export function TaskForm({ users, onSave }: TaskFormProps) {
           {...form.register("assignee_id")}
         >
           <NativeSelectOption value="">Atanmamış</NativeSelectOption>
-          {activeUsers.map((user) => (
+          {assigneeOptions.map((user) => (
             <NativeSelectOption key={user.id} value={user.id}>
-              {user.full_name}
+              {userLabel(user)}
             </NativeSelectOption>
           ))}
         </NativeSelect>
@@ -135,10 +188,13 @@ export function TaskForm({ users, onSave }: TaskFormProps) {
       </Field>
 
       <div className="flex justify-end gap-2">
-        <Link href="/" className={buttonVariants({ variant: "ghost" })}>
-          İptal
-        </Link>
-        <Button type="submit" disabled={!actor || isSubmitting}>
+        {!task && (
+          <Link href="/" className={buttonVariants({ variant: "ghost" })}>
+            İptal
+          </Link>
+        )}
+        {/* Düzenlemede bir alan değişmeden kaydedilemez. */}
+        <Button type="submit" disabled={!actor || isSubmitting || (!!task && !isDirty)}>
           {isSubmitting ? "Kaydediliyor…" : "Kaydet"}
         </Button>
       </div>

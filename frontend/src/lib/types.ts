@@ -29,6 +29,17 @@ export type Task = {
   next_statuses: TaskStatus[]; // bu görevin geçebileceği durumlar (backend'deki geçiş tablosundan)
 };
 
+/** Değişiklik geçmişi (audit log) satırı. Atama kayıtlarında değerler kişi id'sidir (metin). */
+export type HistoryEntry = {
+  id: number;
+  task_id: number;
+  changed_at: string; // ISO 8601, UTC
+  changed_by: number;
+  field: "status" | "assignee_id";
+  old_value: string | null; // ilk atamada boş
+  new_value: string | null;
+};
+
 /** POST /tasks ve PATCH /tasks/{id} gövdesi. PATCH'te sadece değişen alanlar gönderilir. */
 export type TaskBody = {
   title?: string;

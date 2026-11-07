@@ -4,7 +4,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api";
-import type { Task, TaskBody, TaskFilters, TaskList, User } from "@/lib/types";
+import type { HistoryEntry, Task, TaskBody, TaskFilters, TaskList, User } from "@/lib/types";
 
 export const PAGE_SIZE = 20;
 
@@ -38,6 +38,22 @@ export function useTasks(filters: TaskFilters, page: number) {
   });
 }
 
+/** Tek görev. */
+export function useTask(id: number) {
+  return useQuery({
+    queryKey: ["task", id],
+    queryFn: () => apiFetch<Task>(`/tasks/${id}`),
+  });
+}
+
+/** Görevin değişiklik geçmişi, en yenisi önce. */
+export function useHistory(id: number) {
+  return useQuery({
+    queryKey: ["history", id],
+    queryFn: () => apiFetch<HistoryEntry[]>(`/tasks/${id}/history`),
+  });
+}
+
 // --- Değişiklikler (mutation). Başarılı olunca etkilenen önbellek "eski" sayılır ve
 // --- o veriyi gösteren ekran açıksa yeniden çekilir (invalidateQueries).
 
@@ -48,5 +64,21 @@ export function useCreateTask() {
     mutationFn: (body: TaskBody) =>
       apiFetch<Task>("/tasks", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+  });
+}
+
+/** Görevi güncelle (PATCH). Kaydedince görev, geçmişi ve liste yeniden çekilir. */
+export function useUpdateTask(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: TaskBody) =>
+      apiFetch<Task>(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    // Promise döndürülür: veriler yeniden çekilene kadar form "kaydediliyor" durumunda kalır.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["task", id] }),
+        queryClient.invalidateQueries({ queryKey: ["history", id] }),
+        queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+      ]),
   });
 }

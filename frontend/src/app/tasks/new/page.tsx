@@ -16,8 +16,8 @@ export default function NewTaskPage() {
 
   // Hata olursa mutateAsync hata fırlatır; form bunu yakalayıp ilgili alanın altına yazar.
   async function save(body: TaskBody) {
-    await createTask.mutateAsync(body);
-    router.push("/");
+    const created = await createTask.mutateAsync(body);
+    router.push(`/tasks/${created.id}`); // yeni görevin detay sayfası
   }
 
   function renderForm() {

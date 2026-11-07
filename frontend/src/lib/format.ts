@@ -7,6 +7,18 @@ export function formatDate(isoDate: string | null): string {
   return `${day}.${month}.${year}`;
 }
 
+/** UTC zaman damgası -> İstanbul saatiyle "07.11.2026 14:05". */
+export function formatDateTime(isoDateTime: string): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(isoDateTime));
+}
+
 /** Bugünün tarihi İstanbul saatine göre, "YYYY-MM-DD" (en-CA biçimi bu sırayı verir). */
 export function todayInIstanbul(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date());

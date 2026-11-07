@@ -1,3 +1,8 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -28,6 +33,8 @@ type TaskTableProps = {
 };
 
 export function TaskTable({ tasks, users }: TaskTableProps) {
+  const router = useRouter();
+
   return (
     <Table>
       <TableHeader>
@@ -42,9 +49,23 @@ export function TaskTable({ tasks, users }: TaskTableProps) {
       </TableHeader>
       <TableBody>
         {tasks.map((task) => (
-          <TableRow key={task.id}>
+          // Satırın tamamı tıklanabilir; başlıktaki link klavye ve "yeni sekmede aç" için.
+          <TableRow
+            key={task.id}
+            className="cursor-pointer"
+            onClick={() => router.push(`/tasks/${task.id}`)}
+          >
             <TableCell className="text-muted-foreground">{task.id}</TableCell>
-            <TableCell className="font-medium">{task.title}</TableCell>
+            <TableCell className="font-medium">
+              {/* stopPropagation: link tıklanınca satırın onClick'i ikinci kez gezinmesin. */}
+              <Link
+                href={`/tasks/${task.id}`}
+                className="hover:underline"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {task.title}
+              </Link>
+            </TableCell>
             <TableCell>
               <StatusBadge status={task.status} />
             </TableCell>
