@@ -1,6 +1,10 @@
 # Kişisel ortam notları
 setup.md
 ADIMLAR.md
+docs/elle-deneme.md
+
+# next dev her açılışta yapay zekâ ajanları için yeniden üretiyor
+frontend/AGENTS.md
 
 # Secret'lar (.env.example repoya girer)
 .env
