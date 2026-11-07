@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=("../.env", ".env"), extra="ignore")
 
     # Local varsayılanı docker-compose'daki Postgres'e işaret eder; secret değildir.
+    # Not (port çakışması): docker-compose Postgres'i bilgisayarın 5432 portuna açar. Makinede
+    # 5432'yi kullanan başka bir Postgres varsa `docker compose up` "port is already allocated"
+    # hatası verir. O zaman docker-compose.yml'deki eşlemeyi "5433:5432" yapmak yeterli; backend'i
+    # Docker dışında çalıştırıyorsan buradaki ve .env'deki portu da 5433 yap.
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/tasks"
 
     # Virgülle ayrılmış izinli origin listesi, örn. "http://localhost:3000,https://x.vercel.app"
