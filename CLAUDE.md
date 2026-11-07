@@ -125,10 +125,11 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 
 ## Çalışma kuralları (Claude için)
 
-- **Commit:** Commitlerin başında genel sektörde kullanılan "doc: ", "feat : " gibi başlıklar olsun. Küçük, tek mantıksal birim; mesaj Türkçe ve açıklayıcı olsun (örn. "görev listesine durum filtresi eklendi"). "wip" veya "düzeltme" gibi mesajlar yazılmaz. **Squash, rebase, amend ve force push kesinlikle yok.** Commit'ten önce `ruff` ve `pytest` çalıştırılır. 
+- **Commit:** Commitlerin başında genel sektörde kullanılan "doc: ", "feat : " gibi başlıklar olsun. Küçük, tek mantıksal birim; mesaj Türkçe ve açıklayıcı olsun (örn. "görev listesine durum filtresi eklendi"). "wip" veya "düzeltme" gibi mesajlar yazılmaz. **Squash, rebase, amend ve force push kesinlikle yok.** Commit'ten önce `ruff` ve `pytest` çalıştırılır. Kullanılabilecek commit başlıkları listesi : (feat fix docs style refactor perf test build ci chore)
 - **Büyük adımlarda önce plan:** Veri modeli, audit log ve seed gibi adımlarda önce plan sunulur, onaydan sonra kod yazılır.
 - **Açıklanabilir kod:** Kullanıcı her satırı görüşmede açıklayacak. Gereksiz soyutlama, sihirli kütüphane ya da gereğinden karmaşık pattern kullanılmaz. Açık olmayan kararlar kısa bir yorumla açıklanır. Gereken/ iterasyonlu yerlerde class / function tiplerini kullan.
 - **Belirsizlikte:** Kullanıcıya sor. Olabilecek "makul varsayımları" listele ve kullanıcıya söyle. Final karar alındıktan sonra "Karar verilecek iş kuralları" bölümüne ve README'ye işle.
 - **Secret'lar:** Hiçbir secret koda veya repoya yazılmaz.
 - **Adım günlüğü:** Her adımdan sonra `ADIMLAR.md`'ye çok kısa bir kayıt eklenir: ne yapıldı, hangi dosyalar, neden, commit hash'i. Kullanıcı bu dosyayı sunumda kullanacak.
 - **Plan dosyası:** Büyük adımların planı `docs/` altına bir dosya olarak yazılır. Kullanıcı okuyup onaylamadan kod yazılmaz. 
+

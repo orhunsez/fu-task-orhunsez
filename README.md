@@ -1,7 +1,6 @@
 # FU Enerji Full-stack Case Study: Task Tracker
 
 Görev tanımı, çalışma kuralları ve teslim adımları [FU-Enerji-Case-Study-Task-Tracker.pdf](FU-Enerji-Case-Study-Task-Tracker.pdf) dosyasında.
-Geliştirme adımlarının kısa günlüğü: [ADIMLAR.md](ADIMLAR.md).
 
 ```
 FU-Enerji-Case-Study-Task-Tracker.pdf   Görev tanımı
