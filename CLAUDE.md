@@ -36,6 +36,9 @@ Kapsam dışı: AI özet botu, authentication, drag & drop, bildirimler, mobil.
   - 409: geçersiz durum geçişi (geçiş tablosu aşağıda)
   - Hata gövdesi her zaman tutarlı formatta: `{"detail": "...", "field": "..."}`.
 - **Ölçeklenme:** Liste endpoint'inde sayfalama (limit/offset). Filtrelenen alanlara index: `status`, `assignee_id`, `due_date`.
+- **Frontend kuralları backend'i kopyalamaz:** durum menüsü `TaskOut.next_statuses`'tan, gecikme `is_overdue`'dan gelir. Düzenlemede PATCH'e sadece değişen alanlar gider; geçmiş tarih kontrolü sadece tarih değişince çalışır. Pasif kişiye atanmış görevde o kişi "(pasif)" etiketiyle listede kalır.
+- **İşlem yapan kişi** tarayıcıda (localStorage) tutulur, sadece aktif kişiler seçilebilir; seçilmeden kaydedilemez. Silme `actor_id` almaz (silen kişi kaydedilmiyor, bilinen eksik).
+- **Filtreler sayfa state'inde,** URL'de değil: detaydan dönünce sıfırlanır ("2 gün daha olsa" listesine).
 
 ## Vercel / serverless kısıtları (önemli)
 
@@ -104,12 +107,12 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - [x] Anlamlı hata mesajları ve doğru status code'lar
 - [x] Kritik yerlerde testler: validasyon, olmayan kişiye atama, audit log yazımı, gecikme filtresi (testler bellek içi SQLite ile)
 
-**Frontend**
-- [ ] Görev listesi
-- [ ] Oluşturma/düzenleme formu; atama ve atanan kişiyi değiştirme; görünür validasyon mesajları
-- [ ] Filtreler: durum, kişi, geciken
-- [ ] Detay görünümünde değişiklik geçmişi
-- [ ] Loading, empty ve error state'leri
+**Frontend** (plan: `docs/plan-frontend.md`)
+- [x] Görev listesi (tablo, durum renkleri, gecikmiş görevde kırmızı tarih + etiket, sayfa başına 20)
+- [x] Oluşturma/düzenleme formu; atama ve atanan kişiyi değiştirme; görünür validasyon mesajları (zod + backend'in `field` alanı)
+- [x] Filtreler: durum, kişi (atanmamış ve pasifler dahil), geciken; sıralama
+- [x] Detay görünümünde değişiklik geçmişi (kişi id'leri isimle, en altta "Görev oluşturuldu")
+- [x] Loading, empty ve error state'leri ("Tekrar dene", "Filtreleri temizle", "Görev bulunamadı")
 
 **Deploy ve README**
 - [ ] Backend + frontend Vercel'de, DB Neon'da, veriyle dolu
@@ -117,14 +120,41 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 
 ## İş sırası
 
-1. Repo iskeleti + ilk commit
-2. CSV analizi → veri sorunları listesi
-3. Model + Alembic migration + seed script
-4. Backend'in erken deploy'u (hello world seviyesinde; Vercel + Neon bağlantısını erkenden doğrula)
-5. CRUD + filtre/sıralama + audit log + hata yönetimi + testler
-6. Frontend: liste → form → detay/geçmiş → filtreler → state'ler
-7. Frontend deploy, uçtan uca kontrol
-8. README; repoyu boş klasöre clone'layıp adımları sıfırdan dene
+1. ✅ Repo iskeleti + ilk commit
+2. ✅ CSV analizi → veri sorunları listesi (`docs/plan-model-seed.md`)
+3. ✅ Model + Alembic migration + seed script
+4. ⏭ Backend'in erken deploy'u: kullanıcı kararıyla (07.11) frontend'den sonraya alındı
+5. ✅ CRUD + filtre/sıralama + audit log + hata yönetimi + testler
+6. ✅ Frontend: liste → filtreler → işlem yapan kişi → form → detay/geçmiş → silme
+7. ⬜ Backend + frontend deploy, uçtan uca kontrol
+8. ⬜ README; repoyu boş klasöre clone'layıp adımları sıfırdan dene
+
+## Durum ve devir notu
+
+> 07.11.2026 22:40 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
+
+- **Bitti ve commit'lendi:** backend (55 test, ruff temiz) ve frontend. Frontend headless tarayıcıda 33 kontrolle denendi (Docker'daki production build'e karşı); her frontend commit'i tek başına lint + build + tip kontrolünden geçiyor.
+- **Sırada:** deploy → tam README → clean-clone testi → GitHub'a push. Git remote henüz yok. Son teslim **09.11.2026 01:00**; sonrasında push yok.
+- **İnceleme önerileri için kararlar (07.11):** eşzamanlı güncellemede satır kilidi, `deleted_by` ve DB hatası için 503 handler koda **eklenmeyecek** (README'de bilinen eksik/2 gün daha olsa). Port çakışması `backend/app/config.py`'de not olarak duruyor. "Bitmiş görevler listenin başında" ve "filtreler URL'de" yapılmadı.
+
+**Deploy notları**
+- Vercel'de iki proje (Root Directory `backend/` ve `frontend/`), DB için Neon (Vercel entegrasyonu). Önce kullanıcı `gh auth login` ve `vercel login` yapmalı, Neon'u Vercel panelinden eklemeli.
+- Vercel'in Python builder'ı `app/main.py`'yi varsayılan giriş noktası olarak arıyor (CLI'daki builder kodundan doğrulandı); ek ayar gerekmeyebilir.
+- Migration ve seed local'den prod DB'ye karşı bir kez: `alembic upgrade head`, sonra `python -m scripts.seed`. Öneri: bunu Neon'un pooled değil direct (unpooled) adresiyle çalıştır.
+- `CORS_ORIGINS` (frontend'in prod domain'i) ve `NEXT_PUBLIC_API_URL` (build anında gömülür) Vercel env'ine girilir.
+- Repo private olursa `ahmet-yilmaz-cs` collaborator olarak eklenir.
+
+**README için notlar**
+- Çalışma süresi: Claude Code oturumları 07.11 17:09–20:18 ve 20:27–22:40; commit'ler 18:09–19:19 ve 22:36–22:37. Kullanıcının kendi hazırlık süresi eklenmeli.
+- AI kullanımı: kararlar ve incelemeler Sonnet (medium), kod Opus ile; 07.11 akşamki inceleme, frontend kodu ve tarayıcı testleri Opus ile.
+- Geciken görev sayısı tarihe bağlı: 07.11'de 9, 08.11'de 11 (29 ve 34 eklenir), 09.11'de 12 (39 eklenir).
+- Seed sonucu: 9 kişi, 41 görev, 53 geçmiş kaydı; yeni görev id'si 43'ten başlar. Rapor: `docker compose logs backend`.
+
+**Bilinmesi gerekenler**
+- Frontend yığını: Next 16.4 (Turbopack), React 19.3, Tailwind 4 (`next.config.ts`'deki turbopack kuralı). shadcn stili `base-nova`: bileşenler `@base-ui/react` üstünde, `cn` npm paketinden. `buttonVariants`'ı `Link`'e doğrudan verirken `outline` kullanma (çerçeve sınıfları birleşmiyor); `ghost` ya da varsayılan varyant kullan.
+- `next dev` her açılışta `frontend/AGENTS.md` üretir; gitignore'da.
+- Backend testleri bellek içi SQLite ile çalışır. Postgres'e özgü davranışlar psql ya da Swagger ile elle denenir. Frontend için repoda otomatik test yok (plan kararı).
+- Oturum kayıtları: `~/.claude/projects/-home-orhun-code-fu-task-orhunsez/*.jsonl`.
 
 ## Çalışma kuralları (Claude için)
 
@@ -135,4 +165,13 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - **Secret'lar:** Hiçbir secret koda veya repoya yazılmaz.
 - **Adım günlüğü:** Her adımdan sonra `ADIMLAR.md`'ye çok kısa bir kayıt eklenir: ne yapıldı, hangi dosyalar, neden, commit hash'i. Kullanıcı bu dosyayı sunumda kullanacak.
 - **Plan dosyası:** Büyük adımların planı `docs/` altına bir dosya olarak yazılır. Kullanıcı okuyup onaylamadan kod yazılmaz. 
+- **Commit zamanlaması:** Önce tüm özellikler kodlanıp test edilir, sonra plandaki mantıksal commit'lere bölünerek sırayla commit'lenir (kullanıcı tercihi; sıkışık commit saatleri bilinçli). Her commit kendi başına build almalı.
+- **Commit mesajı biçimi:** önek `docs:` (`doc:` değil), kısa bir Türkçe gövde, sonda oturumun verdiği `Co-Authored-By:` satırı. `git commit -q -F - <<'EOF'` ile yazılır; sadece ilgili dosyalar `git add` edilir.
+- **Commit öncesi kontroller:**
+  - Backend: `cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest -q`
+  - Frontend: `cd frontend && npm run lint && npm run build && npx tsc --noEmit`. Sıra önemli: `LayoutProps` gibi tipleri build `.next/types`'a üretir; temiz klasörde build'den önce `tsc` hata verir.
+- **Frontend geliştirme:** önce `docker compose stop frontend`, sonra `cd frontend && npm run dev` (:3000). Bitince `docker compose up --build -d frontend`. DB'yi temiz seed'e döndürmek: `docker compose down -v && docker compose up -d`.
+- **Tarayıcı testi:** Chrome eklentisi bağlı değilse Windows'taki Edge headless + `--remote-debugging-port=9333` + geçici `--user-data-dir` ile CDP üzerinden test edilir (WSL "mirrored" ağ modunda localhost ortak). Kapatırken sadece o örnek kapatılır; `taskkill /IM msedge.exe` kullanıcının Edge'ini de kapatır.
+- **Paketler:** Doğrulanmamış paket kurulmaz (`httpx2` reddedildi, `httpx`'te kalındı). WSL2'de sudo şifre istiyor; kurulumlar kullanıcı dizinine yapılır.
+- **Dil:** Kullanıcı hangi dilde yazarsa o dilde cevap verilir (çoğunlukla Türkçe). Dosyalar ve commit'ler Türkçe. Kod okuma sırası ve görüşme soruları `docs/elle-deneme.md`'de (kişisel, repoda yok).
 
