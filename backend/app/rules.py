@@ -9,6 +9,19 @@ from app.models import TaskStatus
 TEAM_TIMEZONE = ZoneInfo("Europe/Istanbul")
 
 
+# Durum geçiş tablosu (CLAUDE.md, iş kuralları). Burada olmayan geçiş 409 döner.
+ALLOWED_TRANSITIONS: dict[TaskStatus, tuple[TaskStatus, ...]] = {
+    TaskStatus.TODO: (TaskStatus.IN_PROGRESS,),
+    TaskStatus.IN_PROGRESS: (TaskStatus.ON_HOLD, TaskStatus.DONE, TaskStatus.TODO),
+    TaskStatus.ON_HOLD: (TaskStatus.IN_PROGRESS,),
+    TaskStatus.DONE: (TaskStatus.IN_PROGRESS,),  # yeniden açma
+}
+
+
+def can_transition(current: str, new: str) -> bool:
+    return TaskStatus(new) in ALLOWED_TRANSITIONS[TaskStatus(current)]
+
+
 def today() -> date:
     return datetime.now(TEAM_TIMEZONE).date()
 

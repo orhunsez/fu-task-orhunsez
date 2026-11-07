@@ -12,7 +12,7 @@ from pydantic import (
     field_validator,
 )
 
-from app.models import TaskPriority, TaskStatus
+from app.models import HistoryField, TaskPriority, TaskStatus
 from app.rules import is_overdue
 
 
@@ -95,3 +95,17 @@ class TaskListOut(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class HistoryOut(BaseModel):
+    """Audit log satırı: kim (changed_by), ne zaman (changed_at), neyi (field: eski -> yeni)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    task_id: int
+    changed_at: datetime
+    changed_by: int
+    field: HistoryField
+    old_value: str | None
+    new_value: str | None

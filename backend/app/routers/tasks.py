@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.errors import ApiError
-from app.models import Task, TaskStatus, User
-from app.rules import today
-from app.schemas import TaskCreate, TaskListOut, TaskOut, TaskUpdate
+from app.models import HistoryField, Task, TaskHistory, TaskStatus, User
+from app.rules import ALLOWED_TRANSITIONS, can_transition, today
+from app.schemas import HistoryOut, TaskCreate, TaskListOut, TaskOut, TaskUpdate
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -39,6 +39,30 @@ def ensure_active_user(db: Session, user_id: int, field: str) -> User:
 def ensure_not_in_past(due_date, field: str = "due_date") -> None:
     if due_date is not None and due_date < today():
         raise ApiError(422, "Son tarih geçmişte olamaz.", field)
+
+
+def ensure_valid_transition(current: str, new: str) -> None:
+    if not can_transition(current, new):
+        allowed = ", ".join(ALLOWED_TRANSITIONS[TaskStatus(current)])
+        raise ApiError(
+            409,
+            f"'{current}' durumundan '{new}' durumuna geçilemez. İzin verilenler: {allowed}.",
+            "status",
+        )
+
+
+def record_change(db: Session, task_id: int, field: HistoryField, old, new, actor_id: int) -> None:
+    """Audit log satırı ekler. Commit etmez: görev değişikliğiyle aynı transaction'da yazılır,
+    böylece biri yazılıp diğeri yazılamama durumu olmaz."""
+    db.add(
+        TaskHistory(
+            task_id=task_id,
+            changed_by=actor_id,
+            field=field,
+            old_value=None if old is None else str(old),
+            new_value=None if new is None else str(new),
+        )
+    )
 
 
 # --- Endpoint'ler ---
@@ -73,6 +97,10 @@ def create_task(body: TaskCreate, db: DbSession):
         created_by=body.actor_id,
     )
     db.add(task)
+    db.flush()  # görevin id'si geçmiş kaydı için gerekli
+    if task.assignee_id is not None:
+        # İlk atama da geçmişe yazılır (eski değer boş), veri setindeki örnekle aynı.
+        record_change(db, task.id, HistoryField.ASSIGNEE, None, task.assignee_id, body.actor_id)
     db.commit()
     db.refresh(task)  # created_at gibi DB'nin doldurduğu alanları oku
     return task
@@ -91,13 +119,28 @@ def update_task(task_id: int, body: TaskUpdate, db: DbSession):
     # Sadece istekte gönderilen alanlar (gönderilmeyenler olduğu gibi kalır)
     changes = body.model_dump(exclude_unset=True, exclude={"actor_id"})
 
+    new_assignee = changes.get("assignee_id")
+    assignee_changed = "assignee_id" in changes and new_assignee != task.assignee_id
+    status_changed = "status" in changes and changes["status"] != task.status
+
     # Kurallar sadece değer gerçekten değişiyorsa uygulanır. Böylece pasif kişiye atanmış
     # ya da son tarihi geçmiş eski bir görevin başlığı yine düzenlenebilir.
-    new_assignee = changes.get("assignee_id")
-    if "assignee_id" in changes and new_assignee != task.assignee_id and new_assignee is not None:
+    if assignee_changed and new_assignee is not None:
         ensure_active_user(db, new_assignee, "assignee_id")
     if "due_date" in changes and changes["due_date"] != task.due_date:
         ensure_not_in_past(changes["due_date"])
+    if status_changed:
+        ensure_valid_transition(task.status, changes["status"])
+
+    # Audit log: sadece durum ve atama değişiklikleri (aynı değere "değişiklik" yazılmaz)
+    if status_changed:
+        record_change(
+            db, task.id, HistoryField.STATUS, task.status, changes["status"], body.actor_id
+        )
+    if assignee_changed:
+        record_change(
+            db, task.id, HistoryField.ASSIGNEE, task.assignee_id, new_assignee, body.actor_id
+        )
 
     for field, value in changes.items():
         setattr(task, field, value)
@@ -112,3 +155,15 @@ def delete_task(task_id: int, db: DbSession):
     task = get_task_or_404(db, task_id)
     task.deleted_at = func.now()
     db.commit()
+
+
+@router.get("/{task_id}/history", response_model=list[HistoryOut])
+def get_task_history(task_id: int, db: DbSession):
+    """Görevin değişiklik geçmişi, en yenisi önce."""
+    get_task_or_404(db, task_id)
+    query = (
+        select(TaskHistory)
+        .where(TaskHistory.task_id == task_id)
+        .order_by(TaskHistory.changed_at.desc(), TaskHistory.id.desc())
+    )
+    return db.scalars(query).all()
