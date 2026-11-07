@@ -1,0 +1,10 @@
+id,full_name,role,email,is_active
+1,Selin Aydın,Ekip Lideri,selin.aydin@saha-ekibi.example,true
+2,Murat Yıldız,Saha Mühendisi,murat.yildiz@saha-ekibi.example,true
+3,Elif Şahin,Saha Mühendisi,elif.sahin@saha-ekibi.example,true
+4,Kerem Öztürk,Teknisyen,kerem.ozturk@saha-ekibi.example,true
+5,Burak Çelik,Teknisyen,burak.celik@saha-ekibi.example,true
+6,Deniz Arslan,Teknisyen,deniz.arslan@saha-ekibi.example,true
+7,Zeynep Koç,İSG Uzmanı,zeynep.koc@saha-ekibi.example,true
+8,Can Polat,Planlama Uzmanı,can.polat@saha-ekibi.example,true
+9,Okan Kurt,Teknisyen,okan.kurt@saha-ekibi.example,false

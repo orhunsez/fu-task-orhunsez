@@ -1,0 +1,44 @@
+id,title,description,status,priority,assignee_id,due_date,created_by,created_at
+1,RT-03 dişli kutusu yağ numunesi al,"Numuneyi laboratuvara kargola, takip numarasını açıklamaya ekle.",Bitti,Orta,4,2026-09-26,2,2026-09-18T06:15:00Z
+2,RT-07 kanat görsel inceleme (drone),Drone firmasıyla gün ayarla. Rüzgar 8 m/s altındayken uçuş yapılabilir.,Bitti,Yüksek,3,2026-10-10,1,2026-09-19T07:00:00Z
+3,Trafo merkezi aylık kontrol formu,Kasım formu. Ekim formu klasörde örnek olarak duruyor.,Yapılacak,Orta,6,2026-11-06,1,2026-10-31T05:30:00Z
+4,RT-11 yaw motoru arıza tespiti,Yaw hatası 3 kez tekrarladı. Motor sargı direnci ölçülecek.,Devam ediyor,Yüksek,5,2026-10-31,2,2026-10-27T04:45:00Z
+5,RT-01 pitch aküleri değişimi,3 eksenin akü grubu değişecek. Parçalar depoda.,Bitti,Yüksek,4,2026-10-06,2,2026-09-22T05:00:00Z
+6,Yangın söndürme tüplerinin periyodik kontrolü,Tüm türbinler ve trafo binası. Etiket tarihlerini kontrol et.,Bitti,Orta,7,2026-10-17,1,2026-09-23T06:00:00Z
+7,Nacelle vinci yıllık muayene randevusu,Muayene firmasından en az iki tarih iste.,Beklemede,Düşük,8,2026-11-14,1,2026-09-25T08:20:00Z
+8,SCADA haberleşme kopukluğu - RT-05,"Gece 02:00-04:00 arası veri gelmiyor. Sorun fiberde mi modemde mi, netleştir.",Bitti,Yüksek,3,2026-10-01,2,2026-09-28T05:10:00Z
+9,Yedek parça deposu sayımı,Sayım sonuçlarını stok tablosuna gir.,Devam ediyor,Düşük,8,2026-11-16,1,2026-10-20T06:30:00Z
+10,RT-09 jeneratör rulman sıcaklığı yüksek,"Sıcaklık 95 °C'yi geçti. Gres durumuna bak, gerekirse türbini durdur.",Bitti,Yüksek,5,2026-10-02,3,2026-09-30T03:40:00Z
+11,Yüksekte çalışma eğitimi - yeni teknisyenler,İki yeni teknisyen için. Eğitim firmasıyla tarih netleştirilecek.,Yapılacak,Orta,7,2026-11-21,1,2026-10-22T10:00:00Z
+12,RT-02 kule aydınlatma lambası değişimi,"Havacılık ikaz lambası yanmıyor. Yasal zorunluluk, bekletilmesin.",Bitti,Yüksek,6,2026-10-30,2,2026-10-28T05:20:00Z
+13,Ana şalter termal kamera ölçümü,,Yapılacak,,4,,2,2026-10-29T07:00:00Z
+14,RT-04 anemometre kalibrasyonu,Ölçülen rüzgar hızı komşu türbinlerden %15 düşük.,Devam ediyor,Orta,3,2026-11-04,2,2026-10-21T06:00:00Z
+15,Saha yolu bakım talebi (karayolu firması),Yağmurdan sonra RT-10 ve RT-11 yolu bozuldu.,Yapılacak,Düşük,9,2026-11-01,1,2026-10-06T07:30:00Z
+16,RT-06 hidrolik sızıntı kontrolü,Nacelle zemininde yağ birikintisi görüldü.,Bitti,Yüksek,5,2026-10-23,3,2026-10-19T04:30:00Z
+17,Aylık bakım raporunu hazırla (Eylül),"Arıza sayıları, duruş süreleri ve yapılan bakımlar.",Bitti,Orta,2,2026-10-24,1,2026-10-18T06:00:00Z
+18,RT-08 kanat cıvata tork kontrolü,Yıllık bakım kapsamında. Tork anahtarının kalibrasyon belgesini kontrol et.,Devam Ediyor ,Orta,4,2026-11-11,2,2026-10-26T05:00:00Z
+19,Kişisel koruyucu donanım siparişi,"Baret, emniyet kemeri ve iş eldiveni. Beden listesi Zeynep'te.",bitti,Düşük,7,2026-10-27,7,2026-10-20T11:00:00Z
+20,RT-10 konverter fan arızası,"Fan rulmanından ses geliyor. Yedek fan siparişi verildi, parça bekleniyor.",Beklemede,Yüksek,6,2026-10-29,3,2026-10-23T04:50:00Z
+21,RT-12 titreşim sensörü değişimi,Sensör sabit değer gönderiyor.,Yapılacak,Orta,5,2026-11-13,3,2026-11-02T05:15:00Z
+22,Paratoner ölçüm raporu,Yıllık ölçüm. Rapor İSG klasörüne yüklenecek.,Bitti,Orta,7,2026-10-22,1,2026-10-01T06:40:00Z
+23,RT-03 yağ analizi sonucunu değerlendir,Laboratuvar raporu geldi. Demir partikül değeri sınırda.,Devam ediyor,Yüksek,2,2026-11-06,1,2026-11-03T07:10:00Z
+24,Kış hazırlığı: buzlanma sensörleri kontrolü,Tüm türbinler. Isıtıcı devrelerini de test et.,Yapılacak,Orta,6,17.11.2026,1,2026-10-27T06:00:00Z
+25,RT-05 SCADA modem değişimi,Kopukluğun sebebi modem çıktı. Yeni modem geldi.,Bitti,Yüksek,3,2026-10-08,3,2026-10-02T05:00:00Z
+26,İş izni formlarının arşivlenmesi,Ağustos ve Eylül formları.,Yapılacak,Düşük,8,,1,2026-10-11T12:00:00Z
+27,RT-01 fren balatası kontrolü,Balata kalınlığını ölç ve fotoğrafla.,Bitti,Orta,4,2026-11-05,2,2026-10-29T05:30:00Z
+28,Acil durum tatbikatı planı,Aralık tatbikatı için senaryo ve katılımcı listesi.,Devam ediyor,Orta,7,2026-11-17,1,2026-10-30T08:00:00Z
+29,RT-07 kanat ön kenar erozyon onarımı teklifi,Drone incelemesinde 2 kanatta erozyon görüldü. En az 3 firmadan teklif alınacak.,Devam ediyor,Orta,2,07.11.2026,1,2026-10-16T06:20:00Z
+30,Trafo yağ numunesi (yıllık),Numune şişeleri depoda.,Yapılacak,Orta,6,2026-11-14,2,2026-11-04T06:00:00Z
+31,Trafo yağ numunesi (yıllık),Numune şişeleri depoda.,Yapılacak,Orta,6,2026-11-14,2,2026-11-04T06:02:00Z
+32,RT-09 jeneratör rulman değişimi planla,Rulman sıcaklığı yine yükseldi. Vinç ve ekip planı gerekli.,Yapılacak,Yüksek,12,2026-11-10,3,2026-11-03T04:30:00Z
+33,Kasım bakım takvimini hazırla,"Yıllık bakım sırası: RT-08, RT-02, RT-12.",Devam ediyor,Orta,1,2026-10-17,1,2026-10-13T06:00:00Z
+34,RT-11 yaw fren kalibrasyonu,Yaw motoru işi bittikten sonra yapılacak.,Yapılacak,Orta,5,2026-11-07,2,2026-10-27T05:00:00Z
+35,Merdiven ve emniyet halatı kontrolü - tüm türbinler,"Kontrol listesi formu kullanılacak.
+Halat değişim tarihlerini de not et.",Devam ediyor,Yüksek,9,2026-10-17,7,2026-09-24T07:00:00Z
+36,Depo forklift periyodik muayenesi,Muayene firması 18 Kasım'da geliyor.,Yapılacak,Düşük,8,2026-11-18,8,2026-11-05T10:30:00Z
+37,,"RT-04 nacelle içinde yağ izi var, bakılacak.",Yapılacak,Yüksek,4,,4,2026-11-05T13:45:00Z
+38,RT-02 kontrol kabini filtre değişimi,Toz filtreleri. Yıllık bakımla birlikte yapılabilir.,Bitti,Düşük,6,2026-11-16,2,2026-10-22T05:00:00Z
+39,Saha kamerası kayıt sorunu,Trafo binasındaki kamera 3 gündür kayıt almıyor.,Devam ediyor,Orta,3,2026-11-08,8,2026-11-04T04:00:00Z
+40,RT-06 hidrolik pompa değişimi için parça talebi,Sızıntının kaynağı pompa contası. Üreticiden parça istenecek.,Devam ediyor,Yüksek,5,2026-10-30,3,2026-10-23T06:30:00Z
+41,Eylül ayı arıza istatistiklerini çıkar,Aylık rapor için. SCADA alarm listesinden çıkarılacak.,Bitti,Orta,3,2026-10-21,1,2026-10-17T07:00:00Z
+42,RT-12 kanat açısı sensörü kontrolü,Pitch açısı üç kanatta farklı okunuyor.,Yapılacak,Yüksek,,2026-11-11,2,2026-11-06T04:30:00Z
