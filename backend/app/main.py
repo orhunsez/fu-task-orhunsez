@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.errors import register_error_handlers
+from app.routers import users
 
 app = FastAPI(title="Saha Bakım Görev Takip API")
 
@@ -11,6 +13,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+register_error_handlers(app)
+app.include_router(users.router)
 
 
 @app.get("/health")
