@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +13,16 @@ class Settings(BaseSettings):
 
     # Virgülle ayrılmış izinli origin listesi, örn. "http://localhost:3000,https://x.vercel.app"
     cors_origins: str = "http://localhost:3000"
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, value: str) -> str:
+        # Neon/Vercel adresi "postgres://" ya da "postgresql://" ile verir.
+        # SQLAlchemy'ye psycopg 3 sürücüsünü kullanmasını söylemek için öneki değiştiririz.
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                return "postgresql+psycopg://" + value.removeprefix(prefix)
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:
