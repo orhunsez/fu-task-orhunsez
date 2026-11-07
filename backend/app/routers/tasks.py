@@ -1,7 +1,7 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -13,6 +13,20 @@ from app.schemas import HistoryOut, TaskCreate, TaskListOut, TaskOut, TaskUpdate
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 DbSession = Annotated[Session, Depends(get_db)]
+
+# Öncelik metin olarak saklandığı için alfabetik değil, anlamına göre sıralanır.
+PRIORITY_RANK = case({"Yüksek": 1, "Orta": 2, "Düşük": 3}, value=Task.priority)
+
+# "-" önekli seçenekler ters sıralama. Son tarihi olmayan görevler her iki yönde de en sonda.
+SortOption = Literal["due_date", "-due_date", "priority", "-priority", "created_at", "-created_at"]
+SORT_COLUMNS = {
+    "due_date": [Task.due_date.asc().nulls_last()],
+    "-due_date": [Task.due_date.desc().nulls_last()],
+    "priority": [PRIORITY_RANK.asc()],  # önce Yüksek
+    "-priority": [PRIORITY_RANK.desc()],  # önce Düşük
+    "created_at": [Task.created_at.asc()],
+    "-created_at": [Task.created_at.desc()],
+}
 
 
 # --- Yardımcılar ---
@@ -71,12 +85,33 @@ def record_change(db: Session, task_id: int, field: HistoryField, old, new, acto
 @router.get("", response_model=TaskListOut)
 def list_tasks(
     db: DbSession,
+    status: TaskStatus | None = None,
+    assignee_id: int | None = None,
+    unassigned: bool = False,
+    overdue: bool = False,
+    sort: SortOption = "due_date",
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
+    """Görev listesi. Filtreler birlikte kullanılabilir (VE ile birleşir).
+
+    Örnek: /tasks?status=Devam ediyor&overdue=true&sort=-priority&limit=20
+    """
     query = select(Task).where(Task.deleted_at.is_(None))
+    if status is not None:
+        query = query.where(Task.status == status)
+    if assignee_id is not None:
+        query = query.where(Task.assignee_id == assignee_id)
+    if unassigned:
+        query = query.where(Task.assignee_id.is_(None))
+    if overdue:
+        # rules.is_overdue ile aynı tanım, SQL olarak: son tarihi bugünden önce ve bitmemiş
+        query = query.where(Task.due_date < today(), Task.status != TaskStatus.DONE)
+
     total = db.scalar(select(func.count()).select_from(query.subquery()))
-    items = db.scalars(query.order_by(Task.id).limit(limit).offset(offset)).all()
+    # id ikinci sıralama: aynı değerli satırlar sayfalar arasında yer değiştirmesin
+    ordered = query.order_by(*SORT_COLUMNS[sort], Task.id)
+    items = db.scalars(ordered.limit(limit).offset(offset)).all()
     return TaskListOut(items=items, total=total, limit=limit, offset=offset)
 
 
