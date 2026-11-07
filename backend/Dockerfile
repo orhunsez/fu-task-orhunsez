@@ -12,5 +12,8 @@ RUN uv sync --frozen --no-dev
 
 COPY . .
 
+# Sanal ortamdaki komutlar (alembic, uvicorn) doğrudan çalışsın
+ENV PATH="/app/.venv/bin:$PATH"
+
 EXPOSE 8000
-CMD ["uv", "run", "--no-dev", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "start.sh"]

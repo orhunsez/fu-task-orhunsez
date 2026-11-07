@@ -24,6 +24,10 @@ services:
       # Container içinden DB'ye "db" servis adıyla bağlanılır (localhost değil).
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-tasks}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DATASET_DIR: /dataset
+    volumes:
+      # Seed script'in okuyacağı CSV'ler (backend imajının dışında, repo kökünde duruyor)
+      - ./dataset:/dataset:ro
     ports:
       - "8000:8000"
     depends_on:
