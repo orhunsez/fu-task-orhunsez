@@ -88,18 +88,21 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - [x] **Atanmamış görev olabilir** (`assignee_id` nullable).
 - [x] **Geçmiş son tarih:** Yeni görev oluştururken son tarih geçmişte olamaz (422). Güncellemede yalnızca tarih değiştiriliyorsa kontrol edilir; eski görevler düzenlenebilir kalır.
 - [x] **Pasif kişi:** Mevcut görevleri korunur, yeni atama yapılamaz (422).
+- [x] **Yeni görev her zaman "Yapılacak" ile başlar.** Oluştururken durum seçilmez; sonrası geçiş kurallarına tabi.
+- [x] **Audit log'a ilk atama da yazılır** (oluştururken atanan kişi varsa, `old_value` boş).
+- [x] **Kurallar sadece değişen değere uygulanır:** pasif kişiye atanmış ya da tarihi geçmiş eski görevin başlığı yine düzenlenebilir.
 
 *Seçilmemiş varsayımlar (kullanıcıya bildirildi):* gecikme, öncelik, atanmamış görev ve geçmiş son tarih kuralları Claude'un önerisidir.
 
 ## Gereksinim checklist'i
 
 **Backend**
-- [ ] Model: başlık, açıklama, durum (Yapılacak / Devam ediyor / Beklemede / Bitti), öncelik, atanan kişi, son tarih
-- [ ] CRUD endpoint'leri
-- [ ] Filtre: durum, atanan kişi, geciken; sıralama
-- [ ] Audit log: kim, ne zaman, neyi (durum + atama değişiklikleri)
-- [ ] Anlamlı hata mesajları ve doğru status code'lar
-- [ ] Kritik yerlerde testler: validasyon, olmayan kişiye atama, audit log yazımı, gecikme filtresi
+- [x] Model: başlık, açıklama, durum (Yapılacak / Devam ediyor / Beklemede / Bitti), öncelik, atanan kişi, son tarih
+- [x] CRUD endpoint'leri
+- [x] Filtre: durum, atanan kişi, geciken; sıralama
+- [x] Audit log: kim, ne zaman, neyi (durum + atama değişiklikleri)
+- [x] Anlamlı hata mesajları ve doğru status code'lar
+- [x] Kritik yerlerde testler: validasyon, olmayan kişiye atama, audit log yazımı, gecikme filtresi (testler bellek içi SQLite ile)
 
 **Frontend**
 - [ ] Görev listesi
