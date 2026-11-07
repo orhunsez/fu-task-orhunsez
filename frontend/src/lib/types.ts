@@ -29,6 +29,17 @@ export type Task = {
   next_statuses: TaskStatus[]; // bu görevin geçebileceği durumlar (backend'deki geçiş tablosundan)
 };
 
+/** POST /tasks ve PATCH /tasks/{id} gövdesi. PATCH'te sadece değişen alanlar gönderilir. */
+export type TaskBody = {
+  title?: string;
+  description?: string | null;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  assignee_id?: number | null;
+  due_date?: string | null;
+  actor_id: number; // auth olmadığı için işlemi yapan kişi
+};
+
 /** Liste sıralaması. "-" önekliler ters sıra (backend'deki SortOption ile aynı değerler). */
 export type SortOption =
   | "due_date"

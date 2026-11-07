@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { EmptyState, ErrorState, LoadingRows } from "@/components/query-states";
 import { DEFAULT_FILTERS, TaskFiltersBar } from "@/components/task-filters";
 import { TaskTable } from "@/components/task-table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useTasks, useUsers } from "@/lib/queries";
 import type { TaskFilters } from "@/lib/types";
 
@@ -73,7 +74,12 @@ export default function TaskListPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Görevler</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-xl font-semibold">Görevler</h1>
+        <Link href="/tasks/new" className={buttonVariants()}>
+          + Yeni görev
+        </Link>
+      </div>
       <TaskFiltersBar filters={filters} users={users.data ?? []} onChange={changeFilters} />
       {renderTasks()}
     </div>

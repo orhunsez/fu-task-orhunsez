@@ -7,6 +7,11 @@ export function formatDate(isoDate: string | null): string {
   return `${day}.${month}.${year}`;
 }
 
+/** Bugünün tarihi İstanbul saatine göre, "YYYY-MM-DD" (en-CA biçimi bu sırayı verir). */
+export function todayInIstanbul(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date());
+}
+
 /** Seçim listelerinde ve tabloda kişinin görünen adı; pasif kişiye "(pasif)" eklenir. */
 export function userLabel(user: User): string {
   return user.is_active ? user.full_name : `${user.full_name} (pasif)`;

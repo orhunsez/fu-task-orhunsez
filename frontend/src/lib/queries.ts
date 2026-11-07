@@ -1,10 +1,10 @@
 // Sunucu verisi TanStack Query ile çekilir ve önbellekte tutulur.
 // queryKey verinin önbellekteki adresidir; aynı key'i kullanan bileşenler aynı veriyi paylaşır.
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/lib/api";
-import type { TaskFilters, TaskList, User } from "@/lib/types";
+import type { Task, TaskBody, TaskFilters, TaskList, User } from "@/lib/types";
 
 export const PAGE_SIZE = 20;
 
@@ -35,5 +35,18 @@ export function useTasks(filters: TaskFilters, page: number) {
     queryFn: () => apiFetch<TaskList>(`/tasks?${params}`),
     // Yeni sayfa gelene kadar eski liste ekranda kalır; tablo boşalıp zıplamaz.
     placeholderData: keepPreviousData,
+  });
+}
+
+// --- Değişiklikler (mutation). Başarılı olunca etkilenen önbellek "eski" sayılır ve
+// --- o veriyi gösteren ekran açıksa yeniden çekilir (invalidateQueries).
+
+/** Yeni görev (POST). */
+export function useCreateTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: TaskBody) =>
+      apiFetch<Task>("/tasks", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
   });
 }
