@@ -29,6 +29,23 @@ export type Task = {
   next_statuses: TaskStatus[]; // bu görevin geçebileceği durumlar (backend'deki geçiş tablosundan)
 };
 
+/** Liste sıralaması. "-" önekliler ters sıra (backend'deki SortOption ile aynı değerler). */
+export type SortOption =
+  | "due_date"
+  | "-due_date"
+  | "priority"
+  | "-priority"
+  | "created_at"
+  | "-created_at";
+
+/** Liste filtreleri ve sıralama. Boş metin "tümü" demek. */
+export type TaskFilters = {
+  status: TaskStatus | "";
+  assignee: string; // "" = herkes, "none" = atanmamış, diğerleri kişi id'si
+  overdue: boolean;
+  sort: SortOption;
+};
+
 /** GET /tasks yanıtı: bir sayfalık görev ve filtreye uyan toplam görev sayısı. */
 export type TaskList = {
   items: Task[];

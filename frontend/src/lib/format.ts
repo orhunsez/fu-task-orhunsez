@@ -7,10 +7,14 @@ export function formatDate(isoDate: string | null): string {
   return `${day}.${month}.${year}`;
 }
 
-/** Kişi id'sini ada çevirir. Boşsa "—"; pasif kişinin adına "(pasif)" eklenir. */
+/** Seçim listelerinde ve tabloda kişinin görünen adı; pasif kişiye "(pasif)" eklenir. */
+export function userLabel(user: User): string {
+  return user.is_active ? user.full_name : `${user.full_name} (pasif)`;
+}
+
+/** Kişi id'sini ada çevirir. Boşsa "—"; listede olmayan id "Kişi #id" olarak görünür. */
 export function userName(users: User[] | undefined, id: number | null): string {
   if (id === null) return "—";
   const user = users?.find((candidate) => candidate.id === id);
-  if (!user) return `Kişi #${id}`;
-  return user.is_active ? user.full_name : `${user.full_name} (pasif)`;
+  return user ? userLabel(user) : `Kişi #${id}`;
 }
