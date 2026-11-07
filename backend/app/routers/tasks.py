@@ -1,3 +1,16 @@
+"""Görev endpoint'leri.
+
+GET    /tasks               liste (filtre, sıralama, sayfalama)
+POST   /tasks               oluştur
+GET    /tasks/{id}          tek görev
+PATCH  /tasks/{id}          güncelle (durum geçişi kontrolü + audit log)
+DELETE /tasks/{id}          soft delete
+GET    /tasks/{id}/history  değişiklik geçmişi
+
+İş kuralları app/rules.py'de, hata gövdesinin formatı app/errors.py'de.
+"""
+
+from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
@@ -6,16 +19,19 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.errors import ApiError
-from app.models import HistoryField, Task, TaskHistory, TaskStatus, User
+from app.models import HistoryField, Task, TaskHistory, TaskPriority, TaskStatus, User
 from app.rules import ALLOWED_TRANSITIONS, can_transition, today
 from app.schemas import HistoryOut, TaskCreate, TaskListOut, TaskOut, TaskUpdate
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
+# Endpoint parametresi olarak yazılınca FastAPI istek başına bir DB session'ı verir.
 DbSession = Annotated[Session, Depends(get_db)]
 
 # Öncelik metin olarak saklandığı için alfabetik değil, anlamına göre sıralanır.
-PRIORITY_RANK = case({"Yüksek": 1, "Orta": 2, "Düşük": 3}, value=Task.priority)
+PRIORITY_RANK = case(
+    {TaskPriority.HIGH: 1, TaskPriority.MEDIUM: 2, TaskPriority.LOW: 3}, value=Task.priority
+)
 
 # "-" önekli seçenekler ters sıralama. Son tarihi olmayan görevler her iki yönde de en sonda.
 SortOption = Literal["due_date", "-due_date", "priority", "-priority", "created_at", "-created_at"]
@@ -29,7 +45,7 @@ SORT_COLUMNS = {
 }
 
 
-# --- Yardımcılar ---
+# --- Kontroller: kural bozulursa ApiError fırlatır, errors.py bunu JSON yanıta çevirir ---
 
 
 def get_task_or_404(db: Session, task_id: int) -> Task:
@@ -40,19 +56,18 @@ def get_task_or_404(db: Session, task_id: int) -> Task:
     return task
 
 
-def ensure_active_user(db: Session, user_id: int, field: str) -> User:
-    """Olmayan ya da pasif kişi 422 döner (karar: CLAUDE.md, hata yönetimi)."""
+def ensure_active_user(db: Session, user_id: int, field: str) -> None:
+    """Kişi yoksa ya da pasifse 422. `field`, hatanın hangi alana ait olduğunu söyler."""
     user = db.get(User, user_id)
     if user is None:
         raise ApiError(422, f"Kişi bulunamadı (id={user_id}).", field)
     if not user.is_active:
         raise ApiError(422, f"{user.full_name} pasif bir kullanıcı, seçilemez.", field)
-    return user
 
 
-def ensure_not_in_past(due_date, field: str = "due_date") -> None:
+def ensure_not_in_past(due_date: date | None) -> None:
     if due_date is not None and due_date < today():
-        raise ApiError(422, "Son tarih geçmişte olamaz.", field)
+        raise ApiError(422, "Son tarih geçmişte olamaz.", "due_date")
 
 
 def ensure_valid_transition(current: str, new: str) -> None:
@@ -65,9 +80,14 @@ def ensure_valid_transition(current: str, new: str) -> None:
         )
 
 
-def record_change(db: Session, task_id: int, field: HistoryField, old, new, actor_id: int) -> None:
-    """Audit log satırı ekler. Commit etmez: görev değişikliğiyle aynı transaction'da yazılır,
-    böylece biri yazılıp diğeri yazılamama durumu olmaz."""
+def record_change(
+    db: Session, task_id: int, field: HistoryField, *, old, new, actor_id: int
+) -> None:
+    """Audit log'a bir satır ekler ama commit etmez.
+
+    Commit'i endpoint yapar; böylece görev değişikliği ve geçmiş kaydı aynı transaction'da
+    yazılır. Biri yazılıp diğeri yazılamama durumu olmaz.
+    """
     db.add(
         TaskHistory(
             task_id=task_id,
@@ -132,11 +152,18 @@ def create_task(body: TaskCreate, db: DbSession):
         created_by=body.actor_id,
     )
     db.add(task)
-    db.flush()  # görevin id'si geçmiş kaydı için gerekli
+    db.flush()  # INSERT çalışır ve görev id alır; geçmiş kaydı bu id'ye bağlanacak
     if task.assignee_id is not None:
-        # İlk atama da geçmişe yazılır (eski değer boş), veri setindeki örnekle aynı.
-        record_change(db, task.id, HistoryField.ASSIGNEE, None, task.assignee_id, body.actor_id)
-    db.commit()
+        # İlk atama da geçmişe yazılır (eski değer boş); veri setinde de böyle bir örnek var.
+        record_change(
+            db,
+            task.id,
+            HistoryField.ASSIGNEE,
+            old=None,
+            new=task.assignee_id,
+            actor_id=body.actor_id,
+        )
+    db.commit()  # görev + ilk atama kaydı birlikte
     db.refresh(task)  # created_at gibi DB'nin doldurduğu alanları oku
     return task
 
@@ -151,32 +178,42 @@ def update_task(task_id: int, body: TaskUpdate, db: DbSession):
     task = get_task_or_404(db, task_id)
     ensure_active_user(db, body.actor_id, "actor_id")
 
-    # Sadece istekte gönderilen alanlar (gönderilmeyenler olduğu gibi kalır)
+    # 1) Sadece istekte gönderilen alanlar alınır; gönderilmeyenler olduğu gibi kalır.
     changes = body.model_dump(exclude_unset=True, exclude={"actor_id"})
-
-    new_assignee = changes.get("assignee_id")
-    assignee_changed = "assignee_id" in changes and new_assignee != task.assignee_id
     status_changed = "status" in changes and changes["status"] != task.status
+    assignee_changed = "assignee_id" in changes and changes["assignee_id"] != task.assignee_id
+    due_date_changed = "due_date" in changes and changes["due_date"] != task.due_date
 
-    # Kurallar sadece değer gerçekten değişiyorsa uygulanır. Böylece pasif kişiye atanmış
-    # ya da son tarihi geçmiş eski bir görevin başlığı yine düzenlenebilir.
-    if assignee_changed and new_assignee is not None:
-        ensure_active_user(db, new_assignee, "assignee_id")
-    if "due_date" in changes and changes["due_date"] != task.due_date:
-        ensure_not_in_past(changes["due_date"])
+    # 2) Kurallar sadece gerçekten değişen değere uygulanır. Böylece pasif kişiye atanmış
+    #    ya da son tarihi geçmiş eski bir görevin başlığı yine düzenlenebilir.
     if status_changed:
         ensure_valid_transition(task.status, changes["status"])
+    if assignee_changed and changes["assignee_id"] is not None:
+        ensure_active_user(db, changes["assignee_id"], "assignee_id")
+    if due_date_changed:
+        ensure_not_in_past(changes["due_date"])
 
-    # Audit log: sadece durum ve atama değişiklikleri (aynı değere "değişiklik" yazılmaz)
+    # 3) Audit log: eski değerler üzerine yazılmadan önce kaydedilir.
     if status_changed:
         record_change(
-            db, task.id, HistoryField.STATUS, task.status, changes["status"], body.actor_id
+            db,
+            task.id,
+            HistoryField.STATUS,
+            old=task.status,
+            new=changes["status"],
+            actor_id=body.actor_id,
         )
     if assignee_changed:
         record_change(
-            db, task.id, HistoryField.ASSIGNEE, task.assignee_id, new_assignee, body.actor_id
+            db,
+            task.id,
+            HistoryField.ASSIGNEE,
+            old=task.assignee_id,
+            new=changes["assignee_id"],
+            actor_id=body.actor_id,
         )
 
+    # 4) Değişiklikleri uygula. Görev ve geçmiş kayıtları tek commit'le birlikte yazılır.
     for field, value in changes.items():
         setattr(task, field, value)
     db.commit()
@@ -188,7 +225,7 @@ def update_task(task_id: int, body: TaskUpdate, db: DbSession):
 def delete_task(task_id: int, db: DbSession):
     """Soft delete: satır ve değişiklik geçmişi DB'de kalır, görev artık listelenmez."""
     task = get_task_or_404(db, task_id)
-    task.deleted_at = func.now()
+    task.deleted_at = func.now()  # DB'nin saatiyle "şimdi"
     db.commit()
 
 

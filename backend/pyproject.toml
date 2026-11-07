@@ -29,9 +29,19 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-# E/F: temel hatalar, I: import sırası, B: yaygın bug kalıpları, UP: modern Python söz dizimi
-select = ["E", "F", "I", "B", "UP"]
+# E/F: temel hatalar, I: import sırası, B: yaygın bug kalıpları, UP: modern Python söz dizimi,
+# C90: fonksiyon karmaşıklığı (çok dallanan fonksiyon uyarı verir; okunurluğu korumak için)
+select = ["E", "F", "I", "B", "UP", "C90"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ruff.lint.isort]
+# Projedeki alembic/ klasörü yüzünden ruff, alembic paketini bizim kodumuz sanmasın
+known-third-party = ["alembic"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+# Starlette'in httpx -> httpx2 geçiş uyarısı; httpx2 doğrulanamadığı için httpx'te kalındı.
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]

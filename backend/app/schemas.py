@@ -84,6 +84,7 @@ class TaskOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    # DB'de sütun değil: yanıt oluşturulurken hesaplanıp JSON'a eklenir.
     @computed_field
     @property
     def is_overdue(self) -> bool:

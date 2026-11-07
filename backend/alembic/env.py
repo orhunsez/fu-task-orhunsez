@@ -1,7 +1,8 @@
 from logging.config import fileConfig
 
-import app.models  # noqa: F401  (tabloların Base.metadata'ya kaydolması için import)
 from alembic import context
+
+import app.models  # noqa: F401  (tabloların Base.metadata'ya kaydolması için import)
 from app.db import Base, engine
 
 if context.config.config_file_name is not None:

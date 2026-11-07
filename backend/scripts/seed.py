@@ -62,7 +62,7 @@ def parse_due_date(raw: str) -> date | None:
 
 
 def parse_utc_timestamp(raw: str) -> datetime:
-    """ "2026-09-18T06:15:00Z" -> saat dilimli datetime (UTC)."""
+    """ISO 8601 zamanını (örn. 2026-09-18T06:15:00Z) saat dilimli datetime'a çevirir."""
     return datetime.fromisoformat(raw.strip())
 
 
@@ -101,61 +101,73 @@ def build_users(rows: list[dict[str, str]]) -> list[User]:
     ]
 
 
+def clean_task_row(row: dict[str, str], user_ids: set[int], notes: list[str]) -> Task:
+    """tasks.csv'deki tek bir satırı temizleyip Task nesnesine çevirir.
+
+    Yapılan her düzeltme `notes` listesine yazılır (seed sonunda rapor olarak basılır).
+    """
+    task_id = int(row["id"])
+    description = row["description"].strip() or None
+
+    title = row["title"].strip()
+    if not title:  # sorun 6
+        title = title_from_description(description or "")
+        notes.append(f"görev {task_id}: başlık boş -> açıklamadan türetildi: {title!r}")
+
+    status = normalize_status(row["status"])  # sorun 1
+    if status.value != row["status"]:
+        notes.append(f"görev {task_id}: durum {row['status']!r} -> {status.value!r}")
+
+    priority = normalize_priority(row["priority"])  # sorun 5
+    if priority is None:
+        priority = TaskPriority.MEDIUM
+        notes.append(f"görev {task_id}: öncelik boş -> {priority.value!r}")
+
+    due_date = parse_due_date(row["due_date"])  # sorun 3 ve 4
+    if due_date and row["due_date"].strip() != due_date.isoformat():
+        notes.append(f"görev {task_id}: tarih {row['due_date']!r} -> {due_date.isoformat()}")
+
+    assignee_id = parse_optional_int(row["assignee_id"])  # sorun 7
+    if assignee_id is not None and assignee_id not in user_ids:
+        notes.append(f"görev {task_id}: kişi {assignee_id} yok -> atanmamış")
+        assignee_id = None
+
+    created_at = parse_utc_timestamp(row["created_at"])
+    return Task(
+        id=task_id,
+        title=title,
+        description=description,
+        status=status,
+        priority=priority,
+        assignee_id=assignee_id,
+        due_date=due_date,
+        created_by=int(row["created_by"]),
+        created_at=created_at,
+        updated_at=created_at,
+    )
+
+
 def build_tasks(rows: list[dict[str, str]], user_ids: set[int], notes: list[str]) -> list[Task]:
+    """Tüm satırları temizler; içeriği daha önce görülmüş görevi (sorun 10, mükerrer) atlar."""
     tasks: list[Task] = []
-    # Mükerrer kontrolü için daha önce görülen görevlerin "parmak izi" -> ilk görevin id'si
-    seen: dict[tuple, int] = {}
+    first_id_by_content: dict[tuple, int] = {}  # görevin içeriği -> o içeriği ilk taşıyan id
 
     for row in rows:
-        task_id = int(row["id"])
-        description = row["description"].strip() or None
-
-        title = row["title"].strip()
-        if not title:
-            title = title_from_description(description or "")
-            notes.append(f"görev {task_id}: başlık boş -> açıklamadan türetildi: {title!r}")
-
-        status = normalize_status(row["status"])
-        if status.value != row["status"]:
-            notes.append(f"görev {task_id}: durum {row['status']!r} -> {status.value!r}")
-
-        priority = normalize_priority(row["priority"])
-        if priority is None:
-            priority = TaskPriority.MEDIUM
-            notes.append(f"görev {task_id}: öncelik boş -> {priority.value!r}")
-
-        due_date = parse_due_date(row["due_date"])
-        if due_date and row["due_date"].strip() != due_date.isoformat():
-            notes.append(f"görev {task_id}: tarih {row['due_date']!r} -> {due_date.isoformat()}")
-
-        assignee_id = parse_optional_int(row["assignee_id"])
-        if assignee_id is not None and assignee_id not in user_ids:
-            notes.append(f"görev {task_id}: kişi {assignee_id} yok -> atanmamış")
-            assignee_id = None
-
-        fingerprint = (title, description, status, priority, assignee_id, due_date)
-        if fingerprint in seen:
-            notes.append(
-                f"görev {task_id}: görev {seen[fingerprint]} ile aynı (mükerrer) -> atlandı"
-            )
-            continue
-        seen[fingerprint] = task_id
-
-        created_at = parse_utc_timestamp(row["created_at"])
-        tasks.append(
-            Task(
-                id=task_id,
-                title=title,
-                description=description,
-                status=status,
-                priority=priority,
-                assignee_id=assignee_id,
-                due_date=due_date,
-                created_by=int(row["created_by"]),
-                created_at=created_at,
-                updated_at=created_at,
-            )
+        task = clean_task_row(row, user_ids, notes)
+        content = (
+            task.title,
+            task.description,
+            task.status,
+            task.priority,
+            task.assignee_id,
+            task.due_date,
         )
+        if content in first_id_by_content:
+            first_id = first_id_by_content[content]
+            notes.append(f"görev {task.id}: görev {first_id} ile aynı (mükerrer) -> atlandı")
+            continue
+        first_id_by_content[content] = task.id
+        tasks.append(task)
     return tasks
 
 
@@ -195,6 +207,8 @@ def flag_history_conflicts(tasks: list[Task], history: list[TaskHistory], notes:
 
     Güncel durum için tasks.csv esas alınır (export anındaki hali); hiçbir şey değiştirilmez.
     """
+    # (görev id, alan) -> geçmişteki en son yeni değer. Zamana göre sıralı gezildiği için
+    # aynı anahtara yazılan son değer, en güncel değişiklik olur.
     latest: dict[tuple[int, str], str | None] = {}
     for entry in sorted(history, key=lambda h: h.changed_at):
         latest[(entry.task_id, entry.field)] = entry.new_value
