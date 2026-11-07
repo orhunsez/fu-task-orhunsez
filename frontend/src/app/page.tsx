@@ -1,31 +1,25 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { EmptyState, ErrorState, LoadingRows } from "@/components/query-states";
+import { TaskTable } from "@/components/task-table";
+import { useTasks, useUsers } from "@/lib/queries";
 
-import { API_URL, apiFetch } from "@/lib/api";
+export default function TaskListPage() {
+  const tasks = useTasks();
+  const users = useUsers();
 
-export default function HomePage() {
-  // Şimdilik sadece backend bağlantısını gösterir; görev listesi sonraki adımda gelecek.
-  const health = useQuery({
-    queryKey: ["health"],
-    queryFn: () => apiFetch<{ status: string }>("/health"),
-  });
+  // Sorgunun durumuna göre dört görünümden biri çizilir.
+  function renderTasks() {
+    if (tasks.isPending) return <LoadingRows />;
+    if (tasks.isError) return <ErrorState error={tasks.error} onRetry={() => tasks.refetch()} />;
+    if (tasks.data.items.length === 0) return <EmptyState message="Henüz görev yok." />;
+    return <TaskTable tasks={tasks.data.items} users={users.data} />;
+  }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10">
-      <h1 className="text-2xl font-semibold">Saha Bakım Görev Takip</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Rüzgar santrali saha bakım ekibi</p>
-
-      <div className="mt-8 rounded-lg border p-4 text-sm">
-        <span className="font-medium">Backend: </span>
-        {health.isPending && <span>bağlanılıyor…</span>}
-        {health.isError && (
-          <span className="text-destructive">
-            ulaşılamadı ({API_URL}) — {health.error.message}
-          </span>
-        )}
-        {health.isSuccess && <span className="text-green-600">bağlı ({health.data.status})</span>}
-      </div>
-    </main>
+    <div className="space-y-4">
+      <h1 className="text-xl font-semibold">Görevler</h1>
+      {renderTasks()}
+    </div>
   );
 }

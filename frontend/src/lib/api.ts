@@ -1,7 +1,7 @@
 // Backend adresi build sırasında NEXT_PUBLIC_API_URL'den gelir.
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-/** Backend'in tutarlı hata gövdesi: {"detail": "...", "field": "..."} */
+/** Backend'in tutarlı hata gövdesi: {"detail": "...", "field": "..."}. status 0: cevap hiç alınamadı. */
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -14,10 +14,17 @@ export class ApiError extends Error {
 
 /** JSON dönen bir backend isteği yapar; 2xx dışındaki cevaplarda ApiError fırlatır. */
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...init?.headers },
+    });
+  } catch {
+    // Backend kapalı ya da adres yanlış: tarayıcı cevap alamadı.
+    // Tarayıcının İngilizce "Failed to fetch" mesajı yerine anlaşılır bir mesaj gösterilir.
+    throw new ApiError(0, "Sunucuya ulaşılamadı. Bağlantıyı kontrol edip tekrar deneyin.");
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);
