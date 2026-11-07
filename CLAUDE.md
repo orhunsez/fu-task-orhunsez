@@ -32,8 +32,8 @@ Kapsam dışı: AI özet botu, authentication, drag & drop, bildirimler, mobil.
 - **Hata yönetimi:**
   - 422: şema/validasyon hatası (boş başlık, geçersiz enum)
   - 404: görev bulunamadı
-  - 422 veya 404: olmayan kişiye atama (karar verilip README'ye yazılacak)
-  - 409: geçersiz durum geçişi (kural netleşirse)
+  - 422: olmayan ya da pasif (`is_active=false`) kişiye atama, `field=assignee_id`. 404 sadece URL'deki görev yoksa döner.
+  - 409: geçersiz durum geçişi (geçiş tablosu aşağıda)
   - Hata gövdesi her zaman tutarlı formatta: `{"detail": "...", "field": "..."}`.
 - **Ölçeklenme:** Liste endpoint'inde sayfalama (limit/offset). Filtrelenen alanlara index: `status`, `assignee_id`, `due_date`.
 
@@ -74,20 +74,27 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - Her sorun için bir karar verilir: düzelt, varsayılan değer ata, atla ya da işaretle. Seed script bu kuralları uygular. Liste ve kararlar README'ye yazılır.
 - Uygulama hem local'de hem deploy'da veriyle dolu açılmalı.
 
-## Karar verilecek iş kuralları (README'ye yazılacak)
+## İş kuralları (karara bağlandı, README'ye yazılacak)
 
-- [ ] Gecikme tanımı (örn. `due_date < bugün` ve `status != Bitti`; saat dilimi Europe/Istanbul)
-- [ ] Bitti → Yapılacak/Devam ediyor: yeniden açma serbest mi?
-- [ ] Durum geçişleri serbest mi, kısıtlı mı?
-- [ ] Silme: hard delete mi, soft delete mi? Silinen görevin geçmişine ne olur?
-- [ ] Öncelik değerleri (dataset'e göre)
-- [ ] Atanmamış görev olabilir mi?
-- [ ] Son tarih geçmişte bir tarihle yeni görev oluşturulabilir mi?
+- [x] **Durumlar (4 adet):** Yapılacak / Devam ediyor / Beklemede / Bitti. "Beklemede" dokümanda yok ama veride gerçek kullanım var (parça/randevu bekleyen işler), bu yüzden korunur.
+- [x] **Durum geçişleri kısıtlı.** Kurala uymayan geçiş 409 döner. Aynı duruma "geçiş" değişiklik sayılmaz, log yazılmaz.
+  - Yapılacak → Devam ediyor
+  - Devam ediyor → Beklemede, Bitti, Yapılacak (geri alma)
+  - Beklemede → Devam ediyor
+  - Bitti → Devam ediyor (yeniden açma)
+- [x] **Gecikme:** `due_date < bugün` (Europe/Istanbul) ve `status != Bitti`. Son tarihi olmayan görev gecikmiş sayılmaz.
+- [x] **Silme: soft delete.** `deleted_at` doldurulur, görev listede ve detayda görünmez (404), geçmişi DB'de korunur.
+- [x] **Öncelik:** Yüksek / Orta / Düşük, zorunlu. Seed'de boş öncelik → Orta.
+- [x] **Atanmamış görev olabilir** (`assignee_id` nullable).
+- [x] **Geçmiş son tarih:** Yeni görev oluştururken son tarih geçmişte olamaz (422). Güncellemede yalnızca tarih değiştiriliyorsa kontrol edilir; eski görevler düzenlenebilir kalır.
+- [x] **Pasif kişi:** Mevcut görevleri korunur, yeni atama yapılamaz (422).
+
+*Seçilmemiş varsayımlar (kullanıcıya bildirildi):* gecikme, öncelik, atanmamış görev ve geçmiş son tarih kuralları Claude'un önerisidir.
 
 ## Gereksinim checklist'i
 
 **Backend**
-- [ ] Model: başlık, açıklama, durum (Yapılacak / Devam ediyor / Bitti), öncelik, atanan kişi, son tarih
+- [ ] Model: başlık, açıklama, durum (Yapılacak / Devam ediyor / Beklemede / Bitti), öncelik, atanan kişi, son tarih
 - [ ] CRUD endpoint'leri
 - [ ] Filtre: durum, atanan kişi, geciken; sıralama
 - [ ] Audit log: kim, ne zaman, neyi (durum + atama değişiklikleri)
