@@ -125,6 +125,7 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 **Deploy ve README**
 - [x] Backend + frontend Vercel'de, DB Neon'da, veriyle dolu
 - [x] README: çalıştırma adımları, kararlar ve varsayımlar, veri sorunları ve kararları, bilerek yapılmayanlar, "2 gün daha olsa", çalışma süresi, AI kullanımı, deploy linki ve yöntemi, cold start notu
+- [x] README sadeleştirildi (08.11): zorunlu başlıklar kısa özetle README'de, ayrıntılar (kural tablosu, filtre/takvim, hatalar, API, veri tablosu, deploy, tam listeler) `docs/kararlar.md`'de
 
 ## İş sırası
 
