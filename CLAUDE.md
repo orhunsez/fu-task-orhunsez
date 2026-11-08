@@ -135,18 +135,18 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 5. ✅ CRUD + filtre/sıralama + audit log + hata yönetimi + testler
 6. ✅ Frontend: liste → filtreler → işlem yapan kişi → form → detay/geçmiş → silme
 7. ✅ Backend + frontend deploy, uçtan uca kontrol (08.11)
-8. 🔄 README yazıldı (08.11); clean-clone testi ve push kaldı
+8. ✅ README yazıldı (08.11); clean-clone testi yapıldı (08.11). Push'u kullanıcı kendisi yapacak.
 9. ✅ Plan `docs/plan-gorsel-filtre-takvim.md` (08.11): çoklu filtre + tarih aralığı `main`'de, görsel cila + takvim menüsü `soft-ui` branch'inde. `soft-ui`'nin main'e alınması kullanıcının kararı.
 
 ## Durum ve devir notu
 
-> 08.11.2026 21:15 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
+> 08.11.2026 21:23 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
 
-- **Branch'ler (08.11):** Çoklu filtre ve son tarih aralığı `main`'de. Görsel cila ve takvim menüsü `soft-ui` branch'inde yazıldı ve test edildi. Kullanıcı beğenmezse `main` pushlanır; beğenirse `soft-ui` normal/fast-forward merge ile `main`'e alınır (squash/rebase yok). Deploy bu karardan sonra.
+- **Branch'ler (08.11):** Çoklu filtre ve son tarih aralığı `main`'de. Görsel cila ve takvim menüsü `soft-ui` branch'inde yazıldı, test edildi ve kullanıcının onayıyla fast-forward merge ile `main`'e alındı (`78bad57`).
 - **Bitti ve commit'lendi:** backend (64 test, ruff temiz) ve frontend. Frontend headless tarayıcıda 33 kontrolle denendi (Docker'daki production build'e karşı); her frontend commit'i tek başına lint + build + tip kontrolünden geçiyor.
-- **Deploy bitti (08.11):** frontend https://fu-task-orhunsez.vercel.app, backend https://fu-task-orhunsez-api.vercel.app (`828be3e`). Neon şifresi 08.11'de yenilendi (eski şifre bir araç çıktısına sızmıştı); entegrasyon yeni şifreyi Vercel'e kendisi yazdı.
+- **Deploy bitti (08.11):** frontend https://fu-task-orhunsez.vercel.app, backend https://fu-task-orhunsez-api.vercel.app. İlk deploy `828be3e`, son deploy `78bad57` (çoklu filtre, tarih aralığı, yeşil tema, takvim). Canlıda filtre (18) ve takvim (19) kontrolleri geçti. Neon şifresi 08.11'de yenilendi (eski şifre bir araç çıktısına sızmıştı); entegrasyon yeni şifreyi Vercel'e kendisi yazdı.
 - **README yazıldı (08.11).** "Yapay zekâ kullanımı" bölümünü kullanıcı sonra kendisi yeniden yazacak; o bölüme dokunma. Görsel iyileştirmeler README'yi etkilerse güncelle.
-- **Sırada:** kullanıcının `soft-ui` kararı → son deploy (her şey commit'liyken, iki klasörden `vercel deploy --prod`) → clean-clone testi → GitHub'a push. Remote `git@github.com:orhunsez/fu-task-orhunsez.git` tanımlı (SSH çalışıyor, repo **public** ve henüz boş). Son teslim **09.11.2026 01:00**; sonrasında push yok.
+- **Sırada:** sadece GitHub'a push (kullanıcı kendisi yapacak: `git push -u origin main`). Clean-clone testi geçti: klon + `cp .env.example .env` + `docker compose up --build` secret'sız açıldı, 41 görev. Remote `git@github.com:orhunsez/fu-task-orhunsez.git` tanımlı (SSH çalışıyor, repo **public** ve henüz boş). Son teslim **09.11.2026 01:00**; sonrasında push yok.
 - **İnceleme önerileri için kararlar (07.11):** eşzamanlı güncellemede satır kilidi, `deleted_by` ve DB hatası için 503 handler koda **eklenmeyecek** (README'de bilinen eksik/2 gün daha olsa). Port çakışması `backend/app/config.py`'de not olarak duruyor. "Bitmiş görevler listenin başında" ve "filtreler URL'de" yapılmadı.
 
 **Deploy notları**
