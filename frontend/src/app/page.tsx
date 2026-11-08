@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { EmptyState, ErrorState, LoadingRows } from "@/components/query-states";
-import { DEFAULT_FILTERS, TaskFiltersBar } from "@/components/task-filters";
+import { clearFilters, DEFAULT_FILTERS, TaskFiltersBar } from "@/components/task-filters";
 import { TaskTable } from "@/components/task-table";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useTasks, useUsers } from "@/lib/queries";
@@ -30,10 +30,7 @@ export default function TaskListPage() {
     if (tasks.data.items.length === 0) {
       return (
         <EmptyState message="Filtrelere uyan görev yok.">
-          <Button
-            variant="outline"
-            onClick={() => changeFilters({ ...DEFAULT_FILTERS, sort: filters.sort })}
-          >
+          <Button variant="outline" onClick={() => changeFilters(clearFilters(filters))}>
             Filtreleri temizle
           </Button>
         </EmptyState>

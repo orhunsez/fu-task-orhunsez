@@ -60,10 +60,10 @@ export type SortOption =
   | "created_at"
   | "-created_at";
 
-/** Liste filtreleri ve sıralama. Boş metin "tümü" demek. */
+/** Liste filtreleri ve sıralama. Çoklu seçimde boş dizi "tümü" demek. */
 export type TaskFilters = {
-  status: TaskStatus | "";
-  assignee: string; // "" = herkes, "none" = atanmamış, diğerleri kişi id'si
+  statuses: TaskStatus[];
+  assignees: string[]; // kişi id'leri; "none" = atanmamış
   overdue: boolean;
   sort: SortOption;
 };

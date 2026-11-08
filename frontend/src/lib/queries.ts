@@ -24,9 +24,13 @@ export function useTasks(filters: TaskFilters, page: number) {
     limit: String(PAGE_SIZE),
     offset: String(page * PAGE_SIZE),
   });
-  if (filters.status) params.set("status", filters.status);
-  if (filters.assignee === "none") params.set("unassigned", "true");
-  else if (filters.assignee) params.set("assignee_id", filters.assignee);
+  // Çoklu seçimde parametre tekrarlanır: ?status=Yapılacak&status=Beklemede.
+  // Değerlerin nasıl birleşeceğine (VEYA / VE) backend karar verir.
+  filters.statuses.forEach((status) => params.append("status", status));
+  filters.assignees.forEach((assignee) => {
+    if (assignee === "none") params.set("unassigned", "true");
+    else params.append("assignee_id", assignee);
+  });
   if (filters.overdue) params.set("overdue", "true");
 
   return useQuery({

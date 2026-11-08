@@ -1,13 +1,27 @@
+import { XIcon } from "lucide-react";
+
+import { MultiSelectFilter } from "@/components/multi-select-filter";
+import { Button } from "@/components/ui/button";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { userLabel } from "@/lib/format";
-import { STATUSES, type SortOption, type TaskFilters, type User } from "@/lib/types";
+import { STATUSES, type SortOption, type TaskFilters, type TaskStatus, type User } from "@/lib/types";
 
 export const DEFAULT_FILTERS: TaskFilters = {
-  status: "",
-  assignee: "",
+  statuses: [],
+  assignees: [],
   overdue: false,
   sort: "due_date",
 };
+
+/** Durum, kişi ya da geciken filtresinden biri seçili mi? Sıralama filtre sayılmaz. */
+export function hasActiveFilters(filters: TaskFilters): boolean {
+  return filters.statuses.length > 0 || filters.assignees.length > 0 || filters.overdue;
+}
+
+/** Bütün filtreleri sıfırlar; seçili sıralama korunur. */
+export function clearFilters(filters: TaskFilters): TaskFilters {
+  return { ...DEFAULT_FILTERS, sort: filters.sort };
+}
 
 const SORT_LABELS: Record<SortOption, string> = {
   due_date: "Son tarih (en erken önce)",
@@ -17,6 +31,8 @@ const SORT_LABELS: Record<SortOption, string> = {
   created_at: "Oluşturma (en eski önce)",
   "-created_at": "Oluşturma (en yeni önce)",
 };
+
+const STATUS_OPTIONS = STATUSES.map((status) => ({ value: status, label: status }));
 
 type TaskFiltersBarProps = {
   filters: TaskFilters;
@@ -31,51 +47,43 @@ export function TaskFiltersBar({ filters, users, onChange }: TaskFiltersBarProps
     onChange({ ...filters, ...changes });
   }
 
+  // "Atanmamış" da bir seçenek. Pasif kişiler de listede, çünkü üzerlerinde eski görevler var.
+  const personOptions = [
+    { value: "none", label: "Atanmamış" },
+    ...users.map((user) => ({ value: String(user.id), label: userLabel(user) })),
+  ];
+
   return (
-    <div className="flex flex-wrap items-end gap-4">
-      <label className="grid gap-1 text-sm">
-        Durum
-        <NativeSelect
-          value={filters.status}
-          onChange={(event) => update({ status: event.target.value as TaskFilters["status"] })}
-        >
-          <NativeSelectOption value="">Tümü</NativeSelectOption>
-          {STATUSES.map((status) => (
-            <NativeSelectOption key={status} value={status}>
-              {status}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </label>
+    <div className="flex flex-wrap items-center gap-2">
+      <MultiSelectFilter
+        label="Durum"
+        options={STATUS_OPTIONS}
+        selected={filters.statuses}
+        // Seçenekler STATUSES'tan geldiği için değerler geçerli birer durum.
+        onChange={(statuses) => update({ statuses: statuses as TaskStatus[] })}
+      />
+      <MultiSelectFilter
+        label="Kişi"
+        options={personOptions}
+        selected={filters.assignees}
+        onChange={(assignees) => update({ assignees })}
+      />
+      {/* Tek aç/kapa düğmesi; aria-pressed ekran okuyucuya açık/kapalı olduğunu söyler. */}
+      <Button
+        variant={filters.overdue ? "secondary" : "outline"}
+        aria-pressed={filters.overdue}
+        onClick={() => update({ overdue: !filters.overdue })}
+      >
+        Geciken
+      </Button>
+      {hasActiveFilters(filters) && (
+        <Button variant="ghost" onClick={() => onChange(clearFilters(filters))}>
+          <XIcon />
+          Filtreleri temizle
+        </Button>
+      )}
 
-      <label className="grid gap-1 text-sm">
-        Kişi
-        <NativeSelect
-          value={filters.assignee}
-          onChange={(event) => update({ assignee: event.target.value })}
-        >
-          <NativeSelectOption value="">Tümü</NativeSelectOption>
-          <NativeSelectOption value="none">Atanmamış</NativeSelectOption>
-          {/* Pasif kişiler de listede, çünkü üzerlerinde eski görevler var. */}
-          {users.map((user) => (
-            <NativeSelectOption key={user.id} value={user.id}>
-              {userLabel(user)}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </label>
-
-      <label className="flex h-8 items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          className="size-4 accent-primary"
-          checked={filters.overdue}
-          onChange={(event) => update({ overdue: event.target.checked })}
-        />
-        Sadece gecikenler
-      </label>
-
-      <label className="grid gap-1 text-sm">
+      <label className="ml-auto flex items-center gap-2 text-sm">
         Sırala
         <NativeSelect
           value={filters.sort}
