@@ -46,33 +46,40 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* Çerçeve yerine yumuşak gölge: shadow-soft kartlarda, shadow-float açılır panellerde. */
+  --shadow-soft: 0 1px 2px oklch(0.2 0.02 155 / 0.04), 0 6px 24px oklch(0.2 0.02 155 / 0.06);
+  --shadow-float: 0 4px 12px oklch(0.2 0.02 155 / 0.08), 0 16px 40px oklch(0.2 0.02 155 / 0.12);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  /* Yeşil, yumuşak tema. Kontrast (WCAG): primary / beyaz yazı 6.5:1, destructive / beyaz 6.4:1,
+     destructive / rozetin açık kırmızı zemini 5.3:1, muted-foreground / sayfa zemini 5.4:1. */
+  --background: oklch(0.968 0.004 150); /* sayfa zemini: kırık beyaz */
+  --foreground: oklch(0.2 0.012 155);
+  --card: oklch(1 0 0); /* kartlar ve paneller beyaz */
+  --card-foreground: oklch(0.2 0.012 155);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.2 0.012 155);
+  --primary: oklch(0.47 0.105 155); /* koyu-orta yeşil: birincil buton, seçili gün */
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --secondary: oklch(0.95 0.035 155); /* açık yeşil: seçili filtre */
+  --secondary-foreground: oklch(0.36 0.085 155);
+  --muted: oklch(0.955 0.004 150);
+  --muted-foreground: oklch(0.5 0.012 155);
+  --accent: oklch(0.95 0.035 155); /* menüde üzerine gelinen satır */
+  --accent-foreground: oklch(0.36 0.085 155);
+  --destructive: oklch(0.505 0.213 27.518); /* red-700: gecikmiş tarih ve etiketi */
+  --border: oklch(0.915 0.006 150);
+  --input: oklch(0.885 0.008 150);
+  --ring: oklch(0.6 0.11 155);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  /* Köşeler buradan türer: rounded-lg = 18px (popover, menü), rounded-xl ≈ 25px (kart).
+     Hap şeklindeki kontroller (buton, input, select, rozet) kendi dosyalarında rounded-full. */
+  --radius: 1.125rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
