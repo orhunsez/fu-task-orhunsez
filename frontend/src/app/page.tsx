@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { EmptyState, ErrorState, LoadingRows } from "@/components/query-states";
+import { CalendarMenu } from "@/components/task-calendar";
 import { clearFilters, DEFAULT_FILTERS, TaskFiltersBar } from "@/components/task-filters";
 import { TaskTable } from "@/components/task-table";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -80,10 +81,13 @@ export default function TaskListPage() {
             Saha bakım ekibinin işlerini planlayın, atayın ve takip edin.
           </p>
         </div>
-        <Link href="/tasks/new" className={buttonVariants({ size: "lg" })}>
-          <PlusIcon />
-          Yeni görev
-        </Link>
+        <div className="flex gap-2">
+          <CalendarMenu />
+          <Link href="/tasks/new" className={buttonVariants({ size: "lg" })}>
+            <PlusIcon />
+            Yeni görev
+          </Link>
+        </div>
       </div>
       <TaskFiltersBar filters={filters} users={users.data ?? []} onChange={changeFilters} />
       <Card className="gap-0 px-3 py-3">{renderTasks()}</Card>

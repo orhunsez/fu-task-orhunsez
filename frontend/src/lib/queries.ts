@@ -42,6 +42,26 @@ export function useTasks(filters: TaskFilters, page: number) {
   });
 }
 
+/** Takvimin bir seferde çektiği en çok görev (backend'in limit üst sınırı). */
+export const CALENDAR_LIMIT = 200;
+
+/** Son tarihi verilen aralıkta olan görevler (iki uç dahil). Takvim görünen ayı böyle çeker. */
+export function useTasksDueBetween(from: string, to: string) {
+  const params = new URLSearchParams({
+    due_from: from,
+    due_to: to,
+    sort: "due_date",
+    limit: String(CALENDAR_LIMIT),
+  });
+
+  return useQuery({
+    // "tasks" ile başlar: görev eklenince, değişince ya da silinince (invalidateQueries)
+    // liste ile birlikte takvim de yeniden çekilir.
+    queryKey: ["tasks", "calendar", from, to],
+    queryFn: () => apiFetch<TaskList>(`/tasks?${params}`),
+  });
+}
+
 /** Tek görev. */
 export function useTask(id: number) {
   return useQuery({
