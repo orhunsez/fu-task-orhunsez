@@ -208,8 +208,6 @@ Veri elle tutulduğu için kirli kabul edildi. CSV'ler kod yazılmadan önce inc
 
 Seed, geçmiş kayıtlarını geçiş kuralına göre kontrol etmez ve geçmiş tarihli son tarihleri kabul eder: bunlar yaşanmış olaylar. Kurallar sadece API'den yapılan yeni işlemlerde geçerli.
 
-Geciken görev sayısı güne bağlı: 08.11.2026'da 11, 09.11.2026'da 12.
-
 ## Deploy
 
 | Parça | Nerede | Bölge |
@@ -266,6 +264,6 @@ Fonksiyon ile veritabanı aynı bölgede: bir API isteği DB'ye birkaç kez gidi
 Bütün süreçte terminalde **Claude Code** (Anthropic) kullanıldı.
 
 - **Benim yaptıklarım:** İş kurallarına ve teknoloji seçimine ben karar verdim (durumlar, geçişler, gecikme, silme, hata kodları). Her büyük adımdan önce Claude'dan bir plan dosyası istedim (`docs/`), okuyup onayladım ya da değiştirdim. Kodu satır satır okudum ve elle denedim.
-- **Claude'a yaptırdıklarım:** CSV'lerdeki sorunların çıkarılması, plan taslakları, backend ve frontend kodu, testler, kod incelemesi, headless tarayıcı testleri, deploy komutları ve bu README'nin taslağı.
+- **Claude'a yaptırdıklarım:** CSV'lerdeki sorunların çıkarılması, plan taslakları/iskeletleri, backend ve frontend kod yazımı, testler, headless tarayıcı testleri, deploy komutları ve bu README'nin taslağı.
 - **Modeller:** Kararlar ve incelemeler için Claude Sonnet, kod için Claude Opus.
 - **Çalışma kuralları:** Claude'a verdiğim kurallar ve kararların tek kaynağı [CLAUDE.md](CLAUDE.md): küçük commit'ler, açıklanabilir kod, büyük adımda önce plan, secret'lar repoya girmez.
