@@ -228,15 +228,6 @@ Fonksiyon ile veritabanı aynı bölgede: bir API isteği DB'ye birkaç kez gidi
 6. Testler: frontend için Playwright, backend testlerini gerçek Postgres'e karşı da çalıştırmak, GitHub Actions ile her push'ta lint + test + build.
 7. Basit bir giriş ya da en azından prod'da yazma işlemleri için koruma; deploy'u GitHub'a bağlamak.
 
-## Çalışma süresi
-
-Yaklaşık **8 saat**:
-
-- **07.11.2026, yaklaşık 5,5 saat** (17:00–22:40, aralarla): doküman ve CSV analizi, iş kuralları, backend, testler, frontend.
-- **08.11.2026, yaklaşık 2,5 saat:** deploy, README, son düzenlemeler.
-
-Ayrıntılı adım günlüğü commit geçmişinde.
-
 ## Yapay zekâ kullanımı
 
 Bütün süreçte terminalde **Claude Code** (Anthropic) kullanıldı.
