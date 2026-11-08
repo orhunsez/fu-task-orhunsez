@@ -1,4 +1,4 @@
-import { XIcon } from "lucide-react";
+import { AlarmClockIcon, XIcon } from "lucide-react";
 
 import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,7 @@ export function TaskFiltersBar({ filters, users, onChange }: TaskFiltersBarProps
         aria-pressed={filters.overdue}
         onClick={() => update({ overdue: !filters.overdue })}
       >
+        <AlarmClockIcon />
         Geciken
       </Button>
       {hasActiveFilters(filters) && (
@@ -83,9 +84,10 @@ export function TaskFiltersBar({ filters, users, onChange }: TaskFiltersBarProps
         </Button>
       )}
 
-      <label className="ml-auto flex items-center gap-2 text-sm">
+      <label className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
         Sırala
         <NativeSelect
+          className="text-foreground"
           value={filters.sort}
           onChange={(event) => update({ sort: event.target.value as SortOption })}
         >

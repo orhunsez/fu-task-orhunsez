@@ -1,9 +1,11 @@
 "use client";
 
+import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 import { EmptyState, ErrorState, LoadingRows } from "@/components/query-states";
+import { StatusBadge } from "@/components/status-badge";
 import { TaskForm } from "@/components/task-form";
 import { TaskHistory } from "@/components/task-history";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -42,29 +44,50 @@ export default function TaskDetailPage() {
   }
 
   function renderTask() {
-    if (task.isPending || users.isPending) return <LoadingRows count={6} />;
+    if (task.isPending || users.isPending) {
+      return (
+        <Card className="px-6">
+          <LoadingRows count={6} />
+        </Card>
+      );
+    }
     if (task.isError) {
       // 404: görev yok ya da silinmiş. 422: adresteki id sayı değil (örn. /tasks/abc).
       const notFound = task.error instanceof ApiError && [404, 422].includes(task.error.status);
       if (notFound) {
         return (
-          <EmptyState message="Görev bulunamadı. Silinmiş ya da hiç oluşturulmamış olabilir.">
-            <Link href="/" className={buttonVariants()}>
-              Görev listesine dön
-            </Link>
-          </EmptyState>
+          <Card>
+            <EmptyState message="Görev bulunamadı. Silinmiş ya da hiç oluşturulmamış olabilir.">
+              <Link href="/" className={buttonVariants()}>
+                Görev listesine dön
+              </Link>
+            </EmptyState>
+          </Card>
         );
       }
-      return <ErrorState error={task.error} onRetry={() => task.refetch()} />;
+      return (
+        <Card>
+          <ErrorState error={task.error} onRetry={() => task.refetch()} />
+        </Card>
+      );
     }
-    if (users.isError) return <ErrorState error={users.error} onRetry={() => users.refetch()} />;
+    if (users.isError) {
+      return (
+        <Card>
+          <ErrorState error={users.error} onRetry={() => users.refetch()} />
+        </Card>
+      );
+    }
 
     return (
       <>
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-xl font-semibold">
-            <span className="text-muted-foreground">#{task.data.id}</span> {task.data.title}
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              <span className="text-muted-foreground">#{task.data.id}</span> {task.data.title}
+            </h1>
+            <StatusBadge status={task.data.status} />
+          </div>
           <div className="text-right">
             <Button variant="destructive" disabled={deleteTask.isPending} onClick={remove}>
               {deleteTask.isPending ? "Siliniyor…" : "Sil"}
@@ -101,9 +124,10 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <Link href="/" className="text-sm text-muted-foreground hover:underline">
-        ← Görevler
+    <div className="space-y-5">
+      <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        <ArrowLeftIcon />
+        Görevler
       </Link>
       {renderTask()}
     </div>

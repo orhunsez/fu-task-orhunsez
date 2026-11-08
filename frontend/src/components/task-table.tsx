@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -12,19 +13,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, userName } from "@/lib/format";
-import type { Task, TaskStatus, User } from "@/lib/types";
+import { UserAvatar } from "@/components/user-avatar";
+import { formatDate, userLabel, userName } from "@/lib/format";
+import type { Task, User } from "@/lib/types";
 
-// Her durumun kendi rengi var; tabloda bir bakışta ayırt edilsin.
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  Yapılacak: "bg-slate-100 text-slate-700",
-  "Devam ediyor": "bg-blue-100 text-blue-800",
-  Beklemede: "bg-amber-100 text-amber-800",
-  Bitti: "bg-green-100 text-green-800",
-};
-
-function StatusBadge({ status }: { status: TaskStatus }) {
-  return <Badge className={STATUS_COLORS[status]}>{status}</Badge>;
+/** Atanan kişi: yuvarlak avatar + isim. Atanmamışsa soluk "Atanmamış". */
+function Assignee({ users, id }: { users: User[] | undefined; id: number | null }) {
+  if (id === null) return <span className="text-muted-foreground">Atanmamış</span>;
+  const user = users?.find((candidate) => candidate.id === id);
+  if (!user) return userName(users, id); // kişi listesi henüz gelmediyse "Kişi #id"
+  return (
+    <span className="flex items-center gap-2.5">
+      <UserAvatar user={user} />
+      {userLabel(user)}
+    </span>
+  );
 }
 
 type TaskTableProps = {
@@ -38,7 +41,7 @@ export function TaskTable({ tasks, users }: TaskTableProps) {
   return (
     <Table>
       <TableHeader>
-        <TableRow>
+        <TableRow className="hover:bg-transparent">
           <TableHead className="w-12">#</TableHead>
           <TableHead>Başlık</TableHead>
           <TableHead>Durum</TableHead>
@@ -60,7 +63,7 @@ export function TaskTable({ tasks, users }: TaskTableProps) {
               {/* stopPropagation: link tıklanınca satırın onClick'i ikinci kez gezinmesin. */}
               <Link
                 href={`/tasks/${task.id}`}
-                className="hover:underline"
+                className="hover:text-primary"
                 onClick={(event) => event.stopPropagation()}
               >
                 {task.title}
@@ -70,7 +73,9 @@ export function TaskTable({ tasks, users }: TaskTableProps) {
               <StatusBadge status={task.status} />
             </TableCell>
             <TableCell>{task.priority}</TableCell>
-            <TableCell>{userName(users, task.assignee_id)}</TableCell>
+            <TableCell>
+              <Assignee users={users} id={task.assignee_id} />
+            </TableCell>
             <TableCell>
               {/* Gecikme kararını backend verir (is_overdue); burada sadece gösterilir. */}
               {task.is_overdue ? (

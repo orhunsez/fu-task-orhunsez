@@ -1,5 +1,6 @@
 "use client";
 
+import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -7,6 +8,7 @@ import { EmptyState, ErrorState, LoadingRows } from "@/components/query-states";
 import { clearFilters, DEFAULT_FILTERS, TaskFiltersBar } from "@/components/task-filters";
 import { TaskTable } from "@/components/task-table";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { useTasks, useUsers } from "@/lib/queries";
 import type { TaskFilters } from "@/lib/types";
 
@@ -23,7 +25,7 @@ export default function TaskListPage() {
     setPage(0);
   }
 
-  // Sorgunun durumuna göre dört görünümden biri çizilir.
+  // Sorgunun durumuna göre dört görünümden biri çizilir (hepsi aynı kartın içinde).
   function renderTasks() {
     if (tasks.isPending) return <LoadingRows />;
     if (tasks.isError) return <ErrorState error={tasks.error} onRetry={() => tasks.refetch()} />;
@@ -42,7 +44,7 @@ export default function TaskListPage() {
       // Yeni sayfa yüklenirken eski liste soluk görünür.
       <div className={tasks.isPlaceholderData ? "opacity-60" : undefined}>
         <TaskTable tasks={items} users={users.data} />
-        <div className="mt-4 flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between border-t px-3 pt-4 pb-2 text-sm">
           <span className="text-muted-foreground">
             {offset + 1}–{offset + items.length} / {total}
           </span>
@@ -70,15 +72,21 @@ export default function TaskListPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold">Görevler</h1>
-        <Link href="/tasks/new" className={buttonVariants()}>
-          + Yeni görev
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">Görevler</h1>
+          <p className="mt-1 text-muted-foreground">
+            Saha bakım ekibinin işlerini planlayın, atayın ve takip edin.
+          </p>
+        </div>
+        <Link href="/tasks/new" className={buttonVariants({ size: "lg" })}>
+          <PlusIcon />
+          Yeni görev
         </Link>
       </div>
       <TaskFiltersBar filters={filters} users={users.data ?? []} onChange={changeFilters} />
-      {renderTasks()}
+      <Card className="gap-0 px-3 py-3">{renderTasks()}</Card>
     </div>
   );
 }
