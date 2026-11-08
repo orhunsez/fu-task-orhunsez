@@ -1,0 +1,14 @@
+# Satır sonları: kod ve yapılandırma dosyaları her işletim sisteminde (Windows, macOS, Linux)
+# LF ile iner. Windows'taki Git (core.autocrlf=true) start.sh'yi CRLF'e çevirirse container'daki
+# sh ilk satırda durur ve backend açılmaz.
+* text=auto eol=lf
+
+# Case study'nin orijinal dosyaları olduğu gibi kalır: CSV'lerde CRLF ve karışık satır sonları
+# var (kirli veri), seed bunları byte byte aynı okur. Git bu dosyalara dönüşüm uygulamaz.
+dataset/** -text
+fu-task.md -text
+
+# Binary dosyalar
+*.pdf binary
+*.ico binary
+*.png binary
