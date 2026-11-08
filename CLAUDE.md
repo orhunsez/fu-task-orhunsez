@@ -168,8 +168,8 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - **Secret'lar:** Hiçbir secret koda veya repoya yazılmaz.
 - **Adım günlüğü:** Her adımdan sonra `ADIMLAR.md`'ye çok kısa bir kayıt eklenir: ne yapıldı, hangi dosyalar, neden, commit hash'i. Kullanıcı bu dosyayı sunumda kullanacak.
 - **Plan dosyası:** Büyük adımların planı `docs/` altına bir dosya olarak yazılır. Kullanıcı okuyup onaylamadan kod yazılmaz. 
-- **Commit zamanlaması:** Önce tüm özellikler kodlanıp test edilir, sonra plandaki mantıksal commit'lere bölünerek sırayla commit'lenir (kullanıcı tercihi; sıkışık commit saatleri bilinçli). Her commit kendi başına build almalı.
-- **Commit mesajı biçimi:** önek `docs:` (`doc:` değil), kısa bir Türkçe gövde, sonda oturumun verdiği `Co-Authored-By:` satırı. `git commit -q -F - <<'EOF'` ile yazılır; sadece ilgili dosyalar `git add` edilir.
+- **Commit zamanlaması (commit as you go):** Bir özellik kodlanıp test edildiği anda hemen commit'lenir; tüm kod yazılıp sonradan parçalara bölünmez. Her commit küçük, tek mantıksal birim olur ve kendi başına build alır.
+- **Commit mesajı biçimi:** önek `docs:` (`doc:` değil), kısa bir Türkçe gövde. `Co-Authored-By:` ya da başka attribution satırı eklenmez; `...skipping...` gibi kesinti artıkları yazılmaz. `git commit -q -F - <<'EOF'` ile yazılır; sadece ilgili dosyalar `git add` edilir.
 - **Commit öncesi kontroller:**
   - Backend: `cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest -q`
   - Frontend: `cd frontend && npm run lint && npm run build && npx tsc --noEmit`. Sıra önemli: `LayoutProps` gibi tipleri build `.next/types`'a üretir; temiz klasörde build'den önce `tsc` hata verir.
