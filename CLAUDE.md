@@ -39,6 +39,8 @@ Kapsam dışı: AI özet botu, authentication, drag & drop, bildirimler, mobil.
 - **Frontend kuralları backend'i kopyalamaz:** durum menüsü `TaskOut.next_statuses`'tan, gecikme `is_overdue`'dan gelir. Düzenlemede PATCH'e sadece değişen alanlar gider; geçmiş tarih kontrolü sadece tarih değişince çalışır. Pasif kişiye atanmış görevde o kişi "(pasif)" etiketiyle listede kalır.
 - **İşlem yapan kişi** tarayıcıda (localStorage) tutulur, sadece aktif kişiler seçilebilir; seçilmeden kaydedilemez. Silme `actor_id` almaz (silen kişi kaydedilmiyor, bilinen eksik).
 - **Filtreler sayfa state'inde,** URL'de değil: detaydan dönünce sıfırlanır ("2 gün daha olsa" listesine).
+- **Çoklu filtre (08.11):** `status` ve `assignee_id` tekrarlı query param. Aynı filtredeki değerler VEYA, farklı filtreler VE ile birleşir; kişi filtresinde `unassigned=true` seçilen kişilerle VEYA. Arayüzde Durum/Kişi açılır menü (onay kutulu satırlar, "Durum (2)"), Geciken tek düğme. "Filtreleri temizle" sıralamayı korur.
+- **Son tarih aralığı (08.11):** `due_from`/`due_to`, iki uç dahil, ters aralık 422 (`field=due_to`). Takvim menüsü için.
 
 ## Vercel / serverless kısıtları (önemli)
 
@@ -103,6 +105,7 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - [x] Model: başlık, açıklama, durum (Yapılacak / Devam ediyor / Beklemede / Bitti), öncelik, atanan kişi, son tarih
 - [x] CRUD endpoint'leri
 - [x] Filtre: durum, atanan kişi, geciken; sıralama
+- [x] Çoklu değerli filtre (tekrarlı parametre) ve son tarih aralığı (`due_from`/`due_to`), testleriyle (plan: `docs/plan-gorsel-filtre-takvim.md`)
 - [x] Audit log: kim, ne zaman, neyi (durum + atama değişiklikleri)
 - [x] Anlamlı hata mesajları ve doğru status code'lar
 - [x] Kritik yerlerde testler: validasyon, olmayan kişiye atama, audit log yazımı, gecikme filtresi (testler bellek içi SQLite ile)
@@ -111,6 +114,7 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - [x] Görev listesi (tablo, durum renkleri, gecikmiş görevde kırmızı tarih + etiket, sayfa başına 20)
 - [x] Oluşturma/düzenleme formu; atama ve atanan kişiyi değiştirme; görünür validasyon mesajları (zod + backend'in `field` alanı)
 - [x] Filtreler: durum, kişi (atanmamış ve pasifler dahil), geciken; sıralama
+- [x] Durum ve kişi filtrelerinde çoklu seçim (açılır menü, "Durum (2)", "Filtreleri temizle")
 - [x] Detay görünümünde değişiklik geçmişi (kişi id'leri isimle, en altta "Görev oluşturuldu")
 - [x] Loading, empty ve error state'leri ("Tekrar dene", "Filtreleri temizle", "Görev bulunamadı")
 
@@ -128,12 +132,14 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 6. ✅ Frontend: liste → filtreler → işlem yapan kişi → form → detay/geçmiş → silme
 7. ✅ Backend + frontend deploy, uçtan uca kontrol (08.11)
 8. 🔄 README yazıldı (08.11); clean-clone testi ve push kaldı
+9. 🔄 Plan `docs/plan-gorsel-filtre-takvim.md` (08.11): ✅ çoklu filtre + tarih aralığı `main`'de → görsel cila + takvim menüsü `soft-ui` branch'inde
 
 ## Durum ve devir notu
 
-> 08.11.2026 15:02 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
+> 08.11.2026 21:30 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
 
-- **Bitti ve commit'lendi:** backend (55 test, ruff temiz) ve frontend. Frontend headless tarayıcıda 33 kontrolle denendi (Docker'daki production build'e karşı); her frontend commit'i tek başına lint + build + tip kontrolünden geçiyor.
+- **Branch'ler (08.11):** Çoklu filtre ve son tarih aralığı `main`'de. Görsel cila ve takvim menüsü `soft-ui` branch'inde yazılır. Kullanıcı beğenmezse `main` pushlanır; beğenirse `soft-ui` normal/fast-forward merge ile `main`'e alınır (squash/rebase yok). Deploy bu karardan sonra.
+- **Bitti ve commit'lendi:** backend (64 test, ruff temiz) ve frontend. Frontend headless tarayıcıda 33 kontrolle denendi (Docker'daki production build'e karşı); her frontend commit'i tek başına lint + build + tip kontrolünden geçiyor.
 - **Deploy bitti (08.11):** frontend https://fu-task-orhunsez.vercel.app, backend https://fu-task-orhunsez-api.vercel.app (`828be3e`). Neon şifresi 08.11'de yenilendi (eski şifre bir araç çıktısına sızmıştı); entegrasyon yeni şifreyi Vercel'e kendisi yazdı.
 - **README yazıldı (08.11).** "Yapay zekâ kullanımı" bölümünü kullanıcı sonra kendisi yeniden yazacak; o bölüme dokunma. Görsel iyileştirmeler README'yi etkilerse güncelle.
 - **Sırada:** frontend görsel iyileştirmeleri → son deploy (her şey commit'liyken, iki klasörden `vercel deploy --prod`) → clean-clone testi → GitHub'a push. Remote `git@github.com:orhunsez/fu-task-orhunsez.git` tanımlı (SSH çalışıyor, repo **public** ve henüz boş). Son teslim **09.11.2026 01:00**; sonrasında push yok.

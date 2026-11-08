@@ -45,7 +45,7 @@ Makinede 5432 portunu kullanan başka bir Postgres varsa `docker compose up` "po
 ```bash
 cd backend
 uv sync
-uv run pytest            # 55 test, bellek içi SQLite ile (Docker gerekmez)
+uv run pytest            # 64 test, bellek içi SQLite ile (Docker gerekmez)
 uv run ruff check .
 ```
 
@@ -66,7 +66,7 @@ frontend/                Next.js (App Router) uygulaması
   src/components/        tablo, filtreler, form, geçmiş, yükleniyor/boş/hata görünümleri
   src/lib/               API istemcisi, TanStack Query hook'ları, tipler
 dataset/                 users.csv, tasks.csv, task_history.csv
-docs/                    veri modeli + seed planı, frontend planı
+docs/                    planlar: veri modeli + seed, frontend, çoklu filtre + takvim
 docker-compose.yml       local ortam: Postgres + backend + frontend
 .env.example             örnek ortam değişkenleri (secret yok)
 ```
@@ -115,6 +115,16 @@ Kuralların tek kaynağı backend. Geçiş tablosu ve gecikme tanımı `backend/
 - Durum menüsü, görev yanıtındaki `next_statuses` alanından gelir.
 - "Gecikmiş" etiketi `is_overdue` alanından gelir.
 - Düzenlemede PATCH'e sadece değişen alanlar gider.
+- Filtrelerde arayüz seçilen değerleri olduğu gibi gönderir. Değerlerin nasıl birleşeceğine backend karar verir.
+
+### Filtreler
+
+- **Durum ve Kişi açılır menü.** İçindeki seçenekler onay kutusu gibi açılıp kapanır ve aynı filtrede birden fazla değer seçilebilir (örn. Yapılacak + Beklemede). Menü seçim yapınca kapanmaz. Tetikleyicide seçili sayısı yazar: "Durum (2)".
+- **Kişi menüsünde "Atanmamış" da bir seçenek.** Pasif kişiler de listede, "(pasif)" etiketiyle, çünkü üzerlerinde eski görevler var.
+- **Geciken** tek bir aç/kapa düğmesi.
+- **Birleşme kuralı:** Aynı filtredeki değerler VEYA, farklı filtreler VE ile birleşir. Örneğin "Durum: Yapılacak, Beklemede" + "Kişi: Atanmamış, Okan Kurt" + "Geciken" şu anlama gelir: Yapılacak ya da Beklemede durumunda, atanmamış ya da Okan'a atanmış ve gecikmiş görevler.
+- **Filtreleri temizle** durum, kişi ve geciken filtrelerini sıfırlar. Sıralama filtre sayılmadığı için kalır. Düğme bir filtre seçiliyken çubukta, sonuç boşsa boş ekranda görünür.
+- Filtreler sayfa state'inde tutulur, URL'de değil. Sayfa yenilenince sıfırlanır.
 
 ### Hatalar
 
@@ -142,6 +152,7 @@ Olmayan kişi için 404 değil 422 dönüyor, çünkü URL'deki kaynak (görev) 
 ```
 GET    /users                 kişiler (pasifler dahil)
 GET    /tasks                 liste: ?status= &assignee_id= &unassigned=true &overdue=true
+                              &due_from=YYYY-MM-DD &due_to=YYYY-MM-DD
                               &sort=due_date|-due_date|priority|-priority|created_at|-created_at
                               &limit= &offset=
 POST   /tasks                 oluştur
@@ -151,6 +162,10 @@ DELETE /tasks/{id}            soft delete
 GET    /tasks/{id}/history    değişiklik geçmişi
 GET    /health                ayakta mı (DB'ye dokunmaz)
 ```
+
+- `status` ve `assignee_id` tekrarlanabilir: `?status=Yapılacak&status=Beklemede`. Tek değerli çağrılar eskisi gibi çalışır. `unassigned=true`, seçilen kişilerle VEYA ile birleşir: `?assignee_id=3&unassigned=true` 3 numaralı kişinin görevlerini ve atanmamış görevleri getirir.
+- Listedeki değerlerden biri geçersizse 422 döner ve `field` yine `"status"` olur.
+- `due_from` ve `due_to` son tarih aralığıdır ve iki uç da dahildir. Son tarihi olmayan görevler bu aralıkta dönmez. Başlangıç bitişten sonraysa 422 döner (`"field": "due_to"`). Bu filtre bir takvim görünümü için hazırlandı, arayüzde henüz kullanılmıyor.
 
 ## Veri setindeki sorunlar ve kararlar
 
