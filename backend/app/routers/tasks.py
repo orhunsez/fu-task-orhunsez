@@ -14,7 +14,7 @@ from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -80,6 +80,36 @@ def ensure_valid_transition(current: str, new: str) -> None:
         )
 
 
+def filter_conditions(
+    statuses: list[TaskStatus] | None,
+    assignee_ids: list[int] | None,
+    unassigned: bool,
+    overdue: bool,
+) -> list:
+    """Liste filtrelerini SQL koşullarına çevirir; silinmiş görevler her zaman dışarıda.
+
+    Aynı filtredeki değerler VEYA ile birleşir (Yapılacak ya da Beklemede), farklı filtreler
+    VE ile (seçilen durumlardan birinde ve seçilen kişilerden birine atanmış).
+    """
+    conditions = [Task.deleted_at.is_(None)]
+    if statuses:
+        conditions.append(Task.status.in_(statuses))
+
+    # Kişi filtresi: seçilen kişilerin görevleri ve istenirse atanmamış görevler, VEYA ile.
+    people = []
+    if assignee_ids:
+        people.append(Task.assignee_id.in_(assignee_ids))
+    if unassigned:
+        people.append(Task.assignee_id.is_(None))
+    if people:
+        conditions.append(or_(*people))
+
+    if overdue:
+        # rules.is_overdue ile aynı tanım, SQL olarak: son tarihi bugünden önce ve bitmemiş
+        conditions += [Task.due_date < today(), Task.status != TaskStatus.DONE]
+    return conditions
+
+
 def record_change(
     db: Session, task_id: int, field: HistoryField, *, old, new, actor_id: int
 ) -> None:
@@ -105,28 +135,20 @@ def record_change(
 @router.get("", response_model=TaskListOut)
 def list_tasks(
     db: DbSession,
-    status: TaskStatus | None = None,
-    assignee_id: int | None = None,
+    # Liste parametreleri tekrarlanabilir: ?status=Yapılacak&status=Beklemede. Tek değer de olur.
+    status: Annotated[list[TaskStatus] | None, Query()] = None,
+    assignee_id: Annotated[list[int] | None, Query()] = None,
     unassigned: bool = False,
     overdue: bool = False,
     sort: SortOption = "due_date",
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ):
-    """Görev listesi. Filtreler birlikte kullanılabilir (VE ile birleşir).
+    """Görev listesi. Aynı filtredeki değerler VEYA, farklı filtreler VE ile birleşir.
 
-    Örnek: /tasks?status=Devam ediyor&overdue=true&sort=-priority&limit=20
+    Örnek: /tasks?status=Yapılacak&status=Beklemede&assignee_id=3&unassigned=true&overdue=true
     """
-    query = select(Task).where(Task.deleted_at.is_(None))
-    if status is not None:
-        query = query.where(Task.status == status)
-    if assignee_id is not None:
-        query = query.where(Task.assignee_id == assignee_id)
-    if unassigned:
-        query = query.where(Task.assignee_id.is_(None))
-    if overdue:
-        # rules.is_overdue ile aynı tanım, SQL olarak: son tarihi bugünden önce ve bitmemiş
-        query = query.where(Task.due_date < today(), Task.status != TaskStatus.DONE)
+    query = select(Task).where(*filter_conditions(status, assignee_id, unassigned, overdue))
 
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     # id ikinci sıralama: aynı değerli satırlar sayfalar arasında yer değiştirmesin

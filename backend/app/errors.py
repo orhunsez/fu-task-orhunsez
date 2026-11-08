@@ -47,7 +47,10 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
     # İlk hatayı döneriz; tutarlı tek bir {"detail", "field"} gövdesi için yeterli.
     error = exc.errors()[0]
     # loc örn. ("body", "title") ya da ("query", "limit"); ilk eleman hatanın yeri, gerisi alan adı.
-    field = ".".join(str(part) for part in error["loc"][1:]) or None
+    # Liste parametresinde sıra numarası da gelir: ("query", "status", 1). Sayılar atlanır,
+    # field "status.1" değil "status" olur (tek değerli çağrıdakiyle aynı).
+    parts = [str(part) for part in error["loc"][1:] if not isinstance(part, int)]
+    field = ".".join(parts) or None
     template = VALIDATION_MESSAGES.get(error["type"])
     if template:
         message = template.format(**error.get("ctx", {}))

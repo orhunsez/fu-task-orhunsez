@@ -66,6 +66,40 @@ def test_unassigned_filter(client, tasks):
     assert ids(client.get("/tasks", params={"unassigned": "true"})) == [4]
 
 
+def test_multiple_statuses_match_any(client, tasks):
+    # ?status=Yapılacak&status=Beklemede: iki durumdan birinde olanlar
+    response = client.get("/tasks", params={"status": ["Yapılacak", "Beklemede"]})
+
+    assert sorted(ids(response)) == [3, 4, 5]
+
+
+def test_multiple_assignees_match_any(client, tasks):
+    response = client.get("/tasks", params={"assignee_id": [1, 2]})
+
+    assert sorted(ids(response)) == [1, 2, 3, 5]
+
+
+def test_assignee_and_unassigned_match_any(client, tasks):
+    # Kişi filtresinde "Atanmamış" da bir seçenek: kişi 1'in görevleri + atanmamış görev
+    response = client.get("/tasks", params={"assignee_id": 1, "unassigned": "true"})
+
+    assert sorted(ids(response)) == [3, 4, 5]
+
+
+def test_different_filters_still_combine_with_and(client, tasks):
+    params = {"status": ["Yapılacak", "Devam ediyor"], "assignee_id": [2], "overdue": "true"}
+
+    assert ids(client.get("/tasks", params=params)) == [1]
+
+
+def test_invalid_value_in_status_list_returns_422(client, tasks):
+    response = client.get("/tasks", params={"status": ["Yapılacak", "İptal"]})
+
+    assert response.status_code == 422
+    # Listedeki sıra numarası alana eklenmez ("status.1" değil)
+    assert response.json()["field"] == "status"
+
+
 def test_invalid_status_filter_returns_422(client, tasks):
     response = client.get("/tasks", params={"status": "İptal"})
 
