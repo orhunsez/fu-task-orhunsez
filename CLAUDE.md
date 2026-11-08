@@ -115,8 +115,8 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - [x] Loading, empty ve error state'leri ("Tekrar dene", "Filtreleri temizle", "Görev bulunamadı")
 
 **Deploy ve README**
-- [ ] Backend + frontend Vercel'de, DB Neon'da, veriyle dolu
-- [ ] README: çalıştırma adımları, kararlar ve varsayımlar, veri sorunları ve kararları, bilerek yapılmayanlar, "2 gün daha olsa", çalışma süresi, AI kullanımı, deploy linki ve yöntemi, cold start notu
+- [x] Backend + frontend Vercel'de, DB Neon'da, veriyle dolu
+- [x] README: çalıştırma adımları, kararlar ve varsayımlar, veri sorunları ve kararları, bilerek yapılmayanlar, "2 gün daha olsa", çalışma süresi, AI kullanımı, deploy linki ve yöntemi, cold start notu
 
 ## İş sırası
 
@@ -126,23 +126,26 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 4. ⏭ Backend'in erken deploy'u: kullanıcı kararıyla (07.11) frontend'den sonraya alındı
 5. ✅ CRUD + filtre/sıralama + audit log + hata yönetimi + testler
 6. ✅ Frontend: liste → filtreler → işlem yapan kişi → form → detay/geçmiş → silme
-7. ⬜ Backend + frontend deploy, uçtan uca kontrol
-8. ⬜ README; repoyu boş klasöre clone'layıp adımları sıfırdan dene
+7. ✅ Backend + frontend deploy, uçtan uca kontrol (08.11)
+8. 🔄 README yazıldı (08.11); clean-clone testi ve push kaldı
 
 ## Durum ve devir notu
 
-> 07.11.2026 22:40 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
+> 08.11.2026 15:02 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
 
 - **Bitti ve commit'lendi:** backend (55 test, ruff temiz) ve frontend. Frontend headless tarayıcıda 33 kontrolle denendi (Docker'daki production build'e karşı); her frontend commit'i tek başına lint + build + tip kontrolünden geçiyor.
-- **Sırada:** deploy → tam README → clean-clone testi → GitHub'a push. Git remote henüz yok. Son teslim **09.11.2026 01:00**; sonrasında push yok.
+- **Deploy bitti (08.11):** frontend https://fu-task-orhunsez.vercel.app, backend https://fu-task-orhunsez-api.vercel.app (`828be3e`). Neon şifresi 08.11'de yenilendi (eski şifre bir araç çıktısına sızmıştı); entegrasyon yeni şifreyi Vercel'e kendisi yazdı.
+- **README yazıldı (08.11).** "Yapay zekâ kullanımı" bölümünü kullanıcı sonra kendisi yeniden yazacak; o bölüme dokunma. Görsel iyileştirmeler README'yi etkilerse güncelle.
+- **Sırada:** frontend görsel iyileştirmeleri → son deploy (her şey commit'liyken, iki klasörden `vercel deploy --prod`) → clean-clone testi → GitHub'a push. Remote `git@github.com:orhunsez/fu-task-orhunsez.git` tanımlı (SSH çalışıyor, repo **public** ve henüz boş). Son teslim **09.11.2026 01:00**; sonrasında push yok.
 - **İnceleme önerileri için kararlar (07.11):** eşzamanlı güncellemede satır kilidi, `deleted_by` ve DB hatası için 503 handler koda **eklenmeyecek** (README'de bilinen eksik/2 gün daha olsa). Port çakışması `backend/app/config.py`'de not olarak duruyor. "Bitmiş görevler listenin başında" ve "filtreler URL'de" yapılmadı.
 
 **Deploy notları**
-- Vercel'de iki proje (Root Directory `backend/` ve `frontend/`), DB için Neon (Vercel entegrasyonu). Önce kullanıcı `gh auth login` ve `vercel login` yapmalı, Neon'u Vercel panelinden eklemeli.
-- Vercel'in Python builder'ı `app/main.py`'yi varsayılan giriş noktası olarak arıyor (CLI'daki builder kodundan doğrulandı); ek ayar gerekmeyebilir.
-- Migration ve seed local'den prod DB'ye karşı bir kez: `alembic upgrade head`, sonra `python -m scripts.seed`. Öneri: bunu Neon'un pooled değil direct (unpooled) adresiyle çalıştır.
-- `CORS_ORIGINS` (frontend'in prod domain'i) ve `NEXT_PUBLIC_API_URL` (build anında gömülür) Vercel env'ine girilir.
-- Repo private olursa `ahmet-yilmaz-cs` collaborator olarak eklenir.
+- Vercel hesabı `orhunsez-4700` (Hobby). Projeler `fu-task-orhunsez-api` (backend/) ve `fu-task-orhunsez` (frontend/), CLI ile her klasörden `vercel deploy --prod`. Git bağlantısı yok; son deploy her şey commit'liyken yapılmalı.
+- `vercel.json`'larda framework (`fastapi`/`nextjs`) ve bölge `fra1`. Neon `aws-eu-central-1`, ücretsiz, Auth/Realtime kapalı.
+- `vercel link` her seferinde token içeren `.env.local` oluşturuyor; silinmeli (backend `.dockerignore` sadece `.env`'i dışlıyor).
+- Neon değişkenleri sensitive: `vercel env pull` değer vermez. Migration/seed için unpooled adres kullanıcıdan alınır (Vercel → Storage → .env.local → Show secret), ekrana basılmadan kullanılır, sonra silinir.
+- Sıfırlama (veri bozulursa): unpooled adresle `alembic downgrade base && alembic upgrade head && python -m scripts.seed`.
+- Ölçümler (08.11): 12 dk boşluktan sonra ilk `/tasks` ~3 sn, sonrakiler 0,3–0,4 sn (README'de).
 
 **README için notlar**
 - Çalışma süresi: Claude Code oturumları 07.11 17:09–20:18 ve 20:27–22:40; commit'ler 18:09–19:19 ve 22:36–22:37. Kullanıcının kendi hazırlık süresi eklenmeli.
