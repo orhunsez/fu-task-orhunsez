@@ -80,11 +80,18 @@ def ensure_valid_transition(current: str, new: str) -> None:
         )
 
 
+def ensure_valid_range(due_from: date | None, due_to: date | None) -> None:
+    if due_from is not None and due_to is not None and due_from > due_to:
+        raise ApiError(422, "Bitiş tarihi başlangıç tarihinden önce olamaz.", "due_to")
+
+
 def filter_conditions(
     statuses: list[TaskStatus] | None,
     assignee_ids: list[int] | None,
     unassigned: bool,
     overdue: bool,
+    due_from: date | None = None,
+    due_to: date | None = None,
 ) -> list:
     """Liste filtrelerini SQL koşullarına çevirir; silinmiş görevler her zaman dışarıda.
 
@@ -107,6 +114,13 @@ def filter_conditions(
     if overdue:
         # rules.is_overdue ile aynı tanım, SQL olarak: son tarihi bugünden önce ve bitmemiş
         conditions += [Task.due_date < today(), Task.status != TaskStatus.DONE]
+
+    # Son tarih aralığı, iki uç dahil (takvim görünen ayı böyle çeker). Son tarihi boş
+    # görevler karşılaştırmada elenir, yani aralık verilince listeye girmez.
+    if due_from is not None:
+        conditions.append(Task.due_date >= due_from)
+    if due_to is not None:
+        conditions.append(Task.due_date <= due_to)
     return conditions
 
 
@@ -140,6 +154,8 @@ def list_tasks(
     assignee_id: Annotated[list[int] | None, Query()] = None,
     unassigned: bool = False,
     overdue: bool = False,
+    due_from: date | None = None,
+    due_to: date | None = None,
     sort: SortOption = "due_date",
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -147,8 +163,11 @@ def list_tasks(
     """Görev listesi. Aynı filtredeki değerler VEYA, farklı filtreler VE ile birleşir.
 
     Örnek: /tasks?status=Yapılacak&status=Beklemede&assignee_id=3&unassigned=true&overdue=true
+    Son tarih aralığı: /tasks?due_from=2026-11-01&due_to=2026-11-30 (iki uç dahil)
     """
-    query = select(Task).where(*filter_conditions(status, assignee_id, unassigned, overdue))
+    ensure_valid_range(due_from, due_to)
+    conditions = filter_conditions(status, assignee_id, unassigned, overdue, due_from, due_to)
+    query = select(Task).where(*conditions)
 
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     # id ikinci sıralama: aynı değerli satırlar sayfalar arasında yer değiştirmesin

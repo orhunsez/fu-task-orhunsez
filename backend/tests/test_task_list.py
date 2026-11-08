@@ -122,3 +122,37 @@ def test_pagination_returns_total(client, tasks):
     assert body["total"] == 5
     assert (body["limit"], body["offset"]) == (2, 2)
     assert ids(response) == [4, 3]
+
+
+# --- Son tarih aralığı (takvim görünen ayı bununla çeker) ---
+
+
+def range_params(start, end) -> dict:
+    return {"due_from": start.isoformat(), "due_to": end.isoformat()}
+
+
+def test_due_range_includes_both_boundary_days(client, tasks):
+    # 1 ve 2 tam başlangıç gününde, 4 tam bitiş gününde; 3 (bugün) aralığın dışında,
+    # 5'in son tarihi yok
+    params = range_params(TODAY - timedelta(days=3), TODAY - timedelta(days=1))
+
+    assert sorted(ids(client.get("/tasks", params=params))) == [1, 2, 4]
+
+
+def test_due_range_excludes_soft_deleted_tasks(client, tasks):
+    assert client.delete("/tasks/4").status_code == 204
+
+    params = range_params(TODAY - timedelta(days=3), TODAY - timedelta(days=1))
+    assert sorted(ids(client.get("/tasks", params=params))) == [1, 2]
+
+
+def test_due_from_alone_skips_tasks_without_due_date(client, tasks):
+    # Sadece başlangıç: bugün ve sonrası. Son tarihi olmayan 5 listede yok.
+    assert ids(client.get("/tasks", params={"due_from": TODAY.isoformat()})) == [3]
+
+
+def test_reversed_due_range_returns_422(client, tasks):
+    response = client.get("/tasks", params=range_params(TODAY, TODAY - timedelta(days=1)))
+
+    assert response.status_code == 422
+    assert response.json()["field"] == "due_to"
