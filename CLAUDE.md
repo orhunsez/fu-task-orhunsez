@@ -22,11 +22,13 @@ Bu dosya projedeki kararların ve çalışma kurallarının tek kaynağı. Her o
 | Tooling | uv (Python paketleri), ruff (lint/format) |
 
 Kapsam dışı: AI özet botu, authentication, drag & drop, bildirimler, mobil.
+Kapsamda (08.11): liste sayfasında yalnızca görüntüleme amaçlı takvim menüsü (takvimde görev oluşturma ve sürükleme yok).
 
 ## Mimari kararlar
 
 - **Frontend sade tutulur:** Sayfalar client component olarak yazılır, veri TanStack Query ile FastAPI'den çekilir. Server Components ve Server Actions ile veri işi yapılmaz; tek backend FastAPI'dir.
-- **Görünüm liste/tablo.** Kanban yok, çünkü drag & drop istenmiyor ve filtre/sıralama tabloda daha doğal.
+- **Görünüm liste/tablo.** Kanban yok, çünkü drag & drop istenmiyor ve filtre/sıralama tabloda daha doğal. Takvim ayrı sayfa değil, liste üstündeki popover; sadece görünen ayı `due_from`/`due_to` ile çeker, liste filtrelerinden bağımsız.
+- **Tema (soft-ui):** renkler, `--radius` (18px) ve `--shadow-soft`/`--shadow-float` `globals.css`'te. Hap şekli (`rounded-full`) sadece shadcn bileşen dosyalarında; sayfalarda `rounded-*` dağıtılmaz.
 - **Kişiler** sabit bir listeden seçilir (`users` tablosu). "Kim değiştirdi" bilgisi, auth olmadığı için request'te gönderilen `actor_id` ile alınır; arayüzde "işlem yapan kişi" seçicisi olur. *(Varsayım: README'ye yazılacak.)*
 - **Audit log** ayrı bir tablodur (`task_history`). Durum ve atama değişiklikleri, görev güncellemesiyle **aynı transaction** içinde yazılır. Endpoint: `GET /tasks/{id}/history`.
 - **Hata yönetimi:**
@@ -117,6 +119,8 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 - [x] Durum ve kişi filtrelerinde çoklu seçim (açılır menü, "Durum (2)", "Filtreleri temizle")
 - [x] Detay görünümünde değişiklik geçmişi (kişi id'leri isimle, en altta "Görev oluşturuldu")
 - [x] Loading, empty ve error state'leri ("Tekrar dene", "Filtreleri temizle", "Görev bulunamadı")
+- [x] Yeşil yumuşak tema, avatar, durum rozetleri (soft-ui)
+- [x] Takvim menüsü: ay görünümü, Bugün, noktalar, gecikmiş gün kırmızı, gün listesi (soft-ui)
 
 **Deploy ve README**
 - [x] Backend + frontend Vercel'de, DB Neon'da, veriyle dolu
@@ -132,17 +136,17 @@ Değerlendirici repoyu clone'layıp hiçbir secret olmadan çalıştırabilmeli.
 6. ✅ Frontend: liste → filtreler → işlem yapan kişi → form → detay/geçmiş → silme
 7. ✅ Backend + frontend deploy, uçtan uca kontrol (08.11)
 8. 🔄 README yazıldı (08.11); clean-clone testi ve push kaldı
-9. 🔄 Plan `docs/plan-gorsel-filtre-takvim.md` (08.11): ✅ çoklu filtre + tarih aralığı `main`'de → görsel cila + takvim menüsü `soft-ui` branch'inde
+9. ✅ Plan `docs/plan-gorsel-filtre-takvim.md` (08.11): çoklu filtre + tarih aralığı `main`'de, görsel cila + takvim menüsü `soft-ui` branch'inde. `soft-ui`'nin main'e alınması kullanıcının kararı.
 
 ## Durum ve devir notu
 
-> 08.11.2026 21:30 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
+> 08.11.2026 21:15 (İstanbul) itibarıyla. Yeni oturum önce bu bölümü okusun; adım adım ayrıntı `ADIMLAR.md`'de (kişisel, repoda yok).
 
-- **Branch'ler (08.11):** Çoklu filtre ve son tarih aralığı `main`'de. Görsel cila ve takvim menüsü `soft-ui` branch'inde yazılır. Kullanıcı beğenmezse `main` pushlanır; beğenirse `soft-ui` normal/fast-forward merge ile `main`'e alınır (squash/rebase yok). Deploy bu karardan sonra.
+- **Branch'ler (08.11):** Çoklu filtre ve son tarih aralığı `main`'de. Görsel cila ve takvim menüsü `soft-ui` branch'inde yazıldı ve test edildi. Kullanıcı beğenmezse `main` pushlanır; beğenirse `soft-ui` normal/fast-forward merge ile `main`'e alınır (squash/rebase yok). Deploy bu karardan sonra.
 - **Bitti ve commit'lendi:** backend (64 test, ruff temiz) ve frontend. Frontend headless tarayıcıda 33 kontrolle denendi (Docker'daki production build'e karşı); her frontend commit'i tek başına lint + build + tip kontrolünden geçiyor.
 - **Deploy bitti (08.11):** frontend https://fu-task-orhunsez.vercel.app, backend https://fu-task-orhunsez-api.vercel.app (`828be3e`). Neon şifresi 08.11'de yenilendi (eski şifre bir araç çıktısına sızmıştı); entegrasyon yeni şifreyi Vercel'e kendisi yazdı.
 - **README yazıldı (08.11).** "Yapay zekâ kullanımı" bölümünü kullanıcı sonra kendisi yeniden yazacak; o bölüme dokunma. Görsel iyileştirmeler README'yi etkilerse güncelle.
-- **Sırada:** frontend görsel iyileştirmeleri → son deploy (her şey commit'liyken, iki klasörden `vercel deploy --prod`) → clean-clone testi → GitHub'a push. Remote `git@github.com:orhunsez/fu-task-orhunsez.git` tanımlı (SSH çalışıyor, repo **public** ve henüz boş). Son teslim **09.11.2026 01:00**; sonrasında push yok.
+- **Sırada:** kullanıcının `soft-ui` kararı → son deploy (her şey commit'liyken, iki klasörden `vercel deploy --prod`) → clean-clone testi → GitHub'a push. Remote `git@github.com:orhunsez/fu-task-orhunsez.git` tanımlı (SSH çalışıyor, repo **public** ve henüz boş). Son teslim **09.11.2026 01:00**; sonrasında push yok.
 - **İnceleme önerileri için kararlar (07.11):** eşzamanlı güncellemede satır kilidi, `deleted_by` ve DB hatası için 503 handler koda **eklenmeyecek** (README'de bilinen eksik/2 gün daha olsa). Port çakışması `backend/app/config.py`'de not olarak duruyor. "Bitmiş görevler listenin başında" ve "filtreler URL'de" yapılmadı.
 
 **Deploy notları**

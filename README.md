@@ -63,7 +63,9 @@ backend/                 FastAPI uygulaması
   tests/                 pytest
 frontend/                Next.js (App Router) uygulaması
   src/app/               sayfalar: liste, yeni görev, görev detayı
-  src/components/        tablo, filtreler, form, geçmiş, yükleniyor/boş/hata görünümleri
+  src/components/        tablo, filtreler, takvim, form, geçmiş, yükleniyor/boş/hata görünümleri
+  src/components/ui/     shadcn bileşenleri (base-ui üstünde)
+  src/app/globals.css    tema: renkler, köşe yuvarlaklığı, gölgeler
   src/lib/               API istemcisi, TanStack Query hook'ları, tipler
 dataset/                 users.csv, tasks.csv, task_history.csv
 docs/                    planlar: veri modeli + seed, frontend, çoklu filtre + takvim
@@ -126,6 +128,21 @@ Kuralların tek kaynağı backend. Geçiş tablosu ve gecikme tanımı `backend/
 - **Filtreleri temizle** durum, kişi ve geciken filtrelerini sıfırlar. Sıralama filtre sayılmadığı için kalır. Düğme bir filtre seçiliyken çubukta, sonuç boşsa boş ekranda görünür.
 - Filtreler sayfa state'inde tutulur, URL'de değil. Sayfa yenilenince sıfırlanır.
 
+### Takvim
+
+Liste sayfasının üstündeki **Takvim** düğmesi küçük bir ay görünümü açar (ayrı sayfa değil). Yalnızca görüntülemek içindir: takvimden görev oluşturulmaz, tarih sürüklenerek değiştirilmez.
+
+- Ay ileri/geri oklarla değişir; **Bugün** düğmesi bu aya dönüp bugünü seçer. Hafta Pazartesi başlar, ay ve gün adları Türkçe.
+- Son tarihi olan görevler günlerinde nokta olarak görünür (en çok 3 nokta): yeşil açık, gri bitmiş, kırmızı gecikmiş görev. Gecikmiş görevi olan günün rakamı da kırmızıdır. Gecikme bilgisi backend'in `is_overdue` alanından gelir; takvim kendisi hesaplamaz.
+- Güne tıklanınca altta o günün görevleri başlık ve durum rozetiyle listelenir. Bitti görevleri soluk görünür; bir göreve tıklanınca detay sayfası açılır. Son tarihi olmayan görevler takvimde yoktur.
+- Takvim sadece görünen ayı çeker: `GET /tasks?due_from=<ayın 1'i>&due_to=<ayın son günü>`. Bir görev eklenince, değişince ya da silinince liste ile birlikte takvim de yenilenir.
+- "Bugün" İstanbul saatine göredir. Izgara paket kullanmadan düz `Date` ile çizilir; günler UTC metotlarıyla hesaplanıp `YYYY-MM-DD` metniyle eşlendiği için tarayıcının saat dilimi günü kaydırmaz.
+- Takvim liste filtrelerinden bağımsızdır, bütün görevleri gösterir. Bir ayda 200'den fazla görev olursa ilk 200'ü gösterilir ve bir uyarı çıkar.
+
+### Görünüm
+
+Yeşil, yumuşak ve köşesiz bir tema. Renkler, köşe yuvarlaklığı (`--radius`) ve gölgeler (`--shadow-soft`, `--shadow-float`) tek yerde, `globals.css`'teki token'larda tanımlı. Buton, input, select ve rozet gibi kontroller kendi shadcn bileşen dosyalarında bir kez hap şekline (`rounded-full`) getirildi; sayfalarda tek tek köşe sınıfı yazılmadı. Gecikmiş tarihi ve etiketi için kırmızı koyulaştırıldı: rozetin açık kırmızı zemininde 5,3:1 kontrast (WCAG AA).
+
 ### Hatalar
 
 Beklenen her hata aynı gövdeyle döner: `{"detail": "Türkçe mesaj", "field": "hatalı alan ya da null"}`. Frontend `field`'a bakıp mesajı ilgili form alanının altında gösterir. Beklenmeyen sunucu hataları (500) bu formatta değil; bkz. [Bilerek yapılmayanlar](#bilerek-yapılmayanlar).
@@ -165,7 +182,7 @@ GET    /health                ayakta mı (DB'ye dokunmaz)
 
 - `status` ve `assignee_id` tekrarlanabilir: `?status=Yapılacak&status=Beklemede`. Tek değerli çağrılar eskisi gibi çalışır. `unassigned=true`, seçilen kişilerle VEYA ile birleşir: `?assignee_id=3&unassigned=true` 3 numaralı kişinin görevlerini ve atanmamış görevleri getirir.
 - Listedeki değerlerden biri geçersizse 422 döner ve `field` yine `"status"` olur.
-- `due_from` ve `due_to` son tarih aralığıdır ve iki uç da dahildir. Son tarihi olmayan görevler bu aralıkta dönmez. Başlangıç bitişten sonraysa 422 döner (`"field": "due_to"`). Bu filtre bir takvim görünümü için hazırlandı, arayüzde henüz kullanılmıyor.
+- `due_from` ve `due_to` son tarih aralığıdır ve iki uç da dahildir. Son tarihi olmayan görevler bu aralıkta dönmez. Başlangıç bitişten sonraysa 422 döner (`"field": "due_to"`). Takvim görünen ayı bu filtreyle çeker.
 
 ## Veri setindeki sorunlar ve kararlar
 
@@ -225,6 +242,7 @@ Fonksiyon ile veritabanı aynı bölgede: bir API isteği DB'ye birkaç kez gidi
 
 - **AI özet botu** (isteğe bağlı bölüm). Önce ana kısmın eksiksiz ve deploy edilmiş olması öne alındı.
 - **Authentication, bildirimler, mobil, drag & drop:** kapsam dışı. Kanban yerine tablo seçildi; filtre ve sıralama tabloda daha doğal.
+- **Takvim yalnızca görüntüleme:** Takvimden görev oluşturma ve sürükleyerek tarih değiştirme yok. Takvim liste filtrelerini uygulamıyor.
 - **Silen kişinin kaydı:** Silme isteği `actor_id` almıyor, "kim sildi" bilinmiyor. Görev ve geçmişi DB'de kalıyor.
 - **Eşzamanlı düzenleme koruması yok:** İki kişi aynı görevi aynı anda düzenlerse son kaydeden kazanır.
 - **DB'ye ulaşılamazsa** API, anlamlı bir 503 ve tek tip hata gövdesi yerine düz bir 500 dönüyor (arayüzde "Tekrar dene" görünüyor).
